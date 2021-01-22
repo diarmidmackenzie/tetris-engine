@@ -9,6 +9,7 @@ when "landed" event occurs, tetris invokes the shape generator again...
 var CONTINUOUS = true;
 var GRID_UNIT = 0.1;
 
+
 const cloneArray = (items) => items.map(item => Array.isArray(item) ? cloneArray(item) : item);
 
 
@@ -235,23 +236,60 @@ AFRAME.registerComponent('shapegenerator', {
 
     // Create the new shape.
     var sceneEl = document.querySelector('a-scene');
-    var entityEl = document.createElement('a-entity');
 
     var shapeId = "falling-shape-" + this.shapeIndex;
-    entityEl.setAttribute("id", shapeId);
+    var shapeProxyId = "proxy-shape-" + this.shapeIndex;
+    modelChoice = Math.floor(Math.random() * (this.shapeModels.length));
+
+    var entityEl = document.createElement('a-entity');
+    entityEl.setAttribute("id", shapeProxyId);
     console.log(`Generating Shape with ID: #${shapeId}`)
+    console.log(`Controlled by Proxy with ID: #${shapeProxyId}`)
     this.shapeIndex += 1;
 
-    entityEl.setAttribute('position', this.el.object3D.position);
-    entityEl.setAttribute('class', 'shape');
-    entityEl.setAttribute('falling', "interval:1000; arena: #arena");
-    entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
+    // Create the Proxy shape first- but before we do that, make sure any
+    // previously created proxies are destroyed.
+    // Shapes are responsible for their own lifecycle through the "falling"
+    // component.  Yes, this is a little inconsistent -
+    // clearing up everything here might be simpler & more robust...
+    staleProxies = document.querySelectorAll('.proxy');
+    for (var ii = 0; ii < staleProxies.length; ii++) {
+      console.log("Destroying stale proxy:" + staleProxies[ii].id);
+      staleProxies[ii].parentNode.removeChild(staleProxies[ii]);
+    }
+
+    entityEl.setAttribute('class', 'proxy');
+    entityEl.setAttribute('sixdof-control-proxy', `controller:#rhand;target:#${shapeId};logger:#log-panel2;debug:true`);
     //entityEl.setAttribute('snap', `snap: ${GRID_UNIT} ${GRID_UNIT} ${GRID_UNIT}`);
 
     // Now finalize the object by attaching it to the scene.
     sceneEl.appendChild(entityEl);
 
-    modelChoice = Math.floor(Math.random() * (this.shapeModels.length));
+    // Now create child entities, one for each cube that makes up the shape.
+    // Typically there will be 4 of these (tetris), but we support other
+    // shape configs too, maybe smaller or larger...
+    for (var ii = 0; ii < this.shapeModels[modelChoice].length; ii++) {
+      var blockEntity = document.createElement('a-entity');
+      blockEntity.setAttribute("mixin", "cube");
+      blockEntity.setAttribute("material", "color:#888; transparent:true; opacity:0.5");
+      blockEntity.setAttribute('position', `${this.shapeModels[modelChoice][ii][0] * GRID_UNIT}
+                                         ${this.shapeModels[modelChoice][ii][1] * GRID_UNIT}
+                                         ${this.shapeModels[modelChoice][ii][2] * GRID_UNIT}`)
+      entityEl.appendChild(blockEntity);
+    }
+
+    // Now the shape that is controlled by this proxy.
+    var entityEl = document.createElement('a-entity');
+    entityEl.setAttribute("id", shapeId);
+    entityEl.setAttribute('position', this.el.object3D.position);
+    entityEl.setAttribute('class', 'shape');
+    entityEl.setAttribute('falling', "interval:1000; arena: #arena");
+    entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
+    entityEl.setAttribute('sixdof-object-control', `proxy:#${shapeProxyId};logger:#log-panel;debug:true;movement:events`);
+    //entityEl.setAttribute('snap', `snap: ${GRID_UNIT} ${GRID_UNIT} ${GRID_UNIT}`);
+
+    // Now finalize the object by attaching it to the scene.
+    sceneEl.appendChild(entityEl);
 
     // Now create child entities, one for each cube that makes up the shape.
     // Typically there will be 4 of these (tetris), but we support other
@@ -270,6 +308,8 @@ AFRAME.registerComponent('shapegenerator', {
     }
 
     // Announce the new shape to anyone who cares, including the shapeId.
+    // Specifically this is monitored by the tetrisgame component, which is
+    // responsible for generating more shapes when this one lands.
     this.el.emit('new-shape', {shapeId: "#" + shapeId});
 
     return (entityEl);
@@ -295,7 +335,12 @@ AFRAME.registerComponent('falling', {
      this.interval = this.data.interval;
      this.startHeight = this.el.object3D.position.y;
 
+     // watch for race conditions.
+     this.testingNewPosition = false;
+
      this.listeners = {
+       move: this.moveEventHandler.bind(this),
+       rotate: this.rotateEventHandler.bind(this),
        xminus: this.xminus.bind(this),
        xplus: this.xplus.bind(this),
        zminus: this.zminus.bind(this),
@@ -323,6 +368,11 @@ AFRAME.registerComponent('falling', {
    },
 
    attachEventListeners: function () {
+     // These are the events we receive when bound to a 6dof controller.
+     this.el.addEventListener('move', this.listeners.move, false);
+     this.el.addEventListener('rotate', this.listeners.rotate, false);
+
+     // These are the events we receive when bound to keyboard controls.
      this.el.addEventListener('xminus', this.listeners.xminus, false);
      this.el.addEventListener('xplus', this.listeners.xplus, false);
      this.el.addEventListener('zminus', this.listeners.zminus, false);
@@ -337,6 +387,11 @@ AFRAME.registerComponent('falling', {
    },
 
    removeEventListeners: function () {
+     // These are the events we receive when bound to a 6dof controller.
+     this.el.removeEventListener('move', this.listeners.move);
+     this.el.removeEventListener('rotate', this.listeners.rotate);
+
+     // These are the events we receive when bound to keyboard controls.
      this.el.removeEventListener('xminus', this.listeners.xminus);
      this.el.removeEventListener('xplus', this.listeners.xplus);
      this.el.removeEventListener('zminus', this.listeners.zminus);
@@ -350,13 +405,43 @@ AFRAME.registerComponent('falling', {
      this.el.removeEventListener('drop', this.listeners.drop);
    },
 
+   moveEventHandler: function(event) {
+     // received "move" event from 6doF controller.
+     // the event data just contains the abolute new position.
+
+     console.log("Move Event from 6DOF Controller")
+     logXYZ("Move data: ", event.detail, 2, true);
+
+     // Overwrite the y data point with the current position.
+     event.detail.y = this.el.object3D.position.y;
+
+     this.moveAbsolute(event.detail);
+   },
+
+   moveAbsolute: function(newPosition) {
+     // Is the new position viable?
+     // Just move the shape, and see how it goes.
+     var oldPosition = AFRAME.utils.clone(this.el.object3D.position);
+     this.testingNewPosition = true;
+     this.el.setAttribute('position', newPosition)
+     logXYZ("Trying to move shape to:", newPosition, 2, true);
+
+     if (this.canShapeMoveHere(this.el, {'x': 0, 'y': 0, 'z': 0})) {
+       // The move worked fine.
+       moved = true;
+     }
+     else {
+       // revert.
+       this.el.setAttribute('position', oldPosition)
+       moved = false;
+     }
+     this.testingNewPosition = false;
+
+     return(moved);
+   },
 
    // returns true if moved, false otherwise.
-   move: function(xMove, yMove, zMove) {
-   // Logging y moves creates crazy log spam.
-     if (yMove == 0) {
-       console.log("Trying to move shape")
-     }
+   moveRelative: function(xMove, yMove, zMove) {
 
      var moveVector = new THREE.Vector3();
      moveVector.x = xMove;
@@ -370,105 +455,115 @@ AFRAME.registerComponent('falling', {
      newPosition.y += yMove;
      newPosition.z += zMove;
 
-     var moved;
-     // Is the new position viable?
-     if (this.canShapeMoveHere(this.el, moveVector)) {
-       // Yes, the move is viable.  Make it happen.
-       this.el.setAttribute('position', newPosition)
-
-       // Logging y moves creates crazy log spam.
-       if (yMove == 0) {
-         console.log(`Moved to x: ${newPosition.x}, y: ${newPosition.y}, z: ${newPosition.z}!`);
-       }
-       moved = true;
-     }
-     else {
-       console.log(`Move to x: ${newPosition.x}, y: ${newPosition.y}, z: ${newPosition.z} not viable`);
-       moved = false;
-     }
+     var moved = this.moveAbsolute(newPosition);
 
      return(moved);
    },
 
-   // Rotation in degrees (for usability), even though THREE.js uses radians natively.
-   // returns value to indicate whether rotation happened.
-   rotate: function(xRot, yRot, zRot) {
-     console.log("Trying to rotate shape")
+   rotateEventHandler: function(event) {
+     // received "rotate" event from 6doF controller.
+     // the event data contains the Euler for the abolute new rotation.
 
-     const xRad = (Math.PI * xRot)/180;
-     const yRad = (Math.PI * yRot)/180;
-     const zRad = (Math.PI * zRot)/180;
+     console.log("Rotate Event from 6DOF Controller")
+     logXYZ("Rotate data: ", event.detail, 1, true);
 
-     // To determine whether we can rotate the shape, we just do the rotation,
-     // then check if the position is viable.
-     // If not, we can undo before any rendering takes place.
+     var quaternion = new THREE.Quaternion();
+     quaternion.setFromEuler(event.detail)
+     this.rotateAbsolute(quaternion);
+   },
 
-     // A-Frame docs recommend changing rotation directly through the object3D.
-     this.el.object3D.rotation.x += xRad;
-     this.el.object3D.rotation.y += yRad;
-     this.el.object3D.rotation.z += zRad;
+   rotateAbsolute: function(quaternion) {
+
+     logQuat("Trying to rotate shape to:", quaternion, 1, true);
+
+     // Before we rotate, save off the old quaternion.
+     var oldQuaternion = new THREE.Quaternion();
+
+     // Apply the new (absolute) rotation.
+     // Copy, not multiply, as this is an absolute rotation,
+     // not a relative one.
+     this.testingNewPosition = true;
+     this.el.object3D.quaternion.copy(quaternion);
 
      var rotated;
      // Is the new position viable?
      if (this.canShapeMoveHere(this.el, {'x': 0, 'y': 0, 'z': 0})) {
        // Yes, the move is viable.  Leave it in place.
 
-       console.log(`Rotated by x: ${xRot}, y: ${yRot}, z: ${zRot}.`);
        rotated = true;
      }
      else {
        // Undo the rotation.
-       this.el.object3D.rotation.x -= xRad;
-       this.el.object3D.rotation.y -= yRad;
-       this.el.object3D.rotation.z -= zRad;
-
-       console.log(`Rotation by x: ${xRot}, y: ${yRot}, z: ${zRot} not viable.`);
+       this.el.object3D.quaternion.copy(oldQuaternion);
        rotated = false;
      }
+     this.testingNewPosition = false;
+
+     return(rotated);
+   },
+
+   rotateRelative: function(xRad, yRad, zRad) {
+     console.log("Trying to rotate shape")
+
+     // to compose rotations reliably, we use Quaternion arithmetic.
+     var eulerDelta = new THREE.Euler(xRad, yRad, zRad);
+     var quaternionDelta = new THREE.Quaternion();
+     quaternionDelta.setFromEuler(eulerDelta);
+
+     // Get Absolute new rotation as a quaternion, by multiplying
+     // current rotation by this delta.
+     var quaternionAbsolute = new THREE.Quaternion();
+     quaternionAbsolute.multiplyQuaternions(this.el.object3D.quaternion,
+                                            quaternionDelta);
+
+     // To determine whether we can rotate the shape, we just do the rotation,
+     // then check if the position is viable.
+     // If not, we can undo before any rendering takes place.
+     rotated = this.rotateAbsolute(quaternionAbsolute)
 
      return(rotated);
    },
 
    zminus: function (event) {
      console.log("zminus");
-     this.move(0, 0, -GRID_UNIT);
+     this.moveRelative(0, 0, -GRID_UNIT);
    },
    zplus: function (event) {
      console.log("zplus");
-     this.move(0, 0, GRID_UNIT);
+     this.moveRelative(0, 0, GRID_UNIT);
    },
    xminus: function (event) {
      console.log("xminus");
-     this.move(-GRID_UNIT, 0, 0);
+     this.moveRelative(-GRID_UNIT, 0, 0);
    },
    xplus : function (event) {
      console.log("xplus");
-     this.move(GRID_UNIT, 0, 0);
+     this.moveRelative(GRID_UNIT, 0, 0);
    },
 
    xRotPlus: function (event) {
      console.log("xRotPlus");
-     this.rotate(90, 0, 0);
+     this.rotateRelative((Math.PI / 2), 0, 0);
    },
    xRotMinus: function (event) {
      console.log("xRotMinus");
-     this.rotate(-90, 0, 0);
+     this.rotateRelative(-(Math.PI / 2), 0, 0);
    },
    yRotPlus: function (event) {
      console.log("yRotPlus");
-     this.rotate(0, 90, 0);
+     this.rotateRelative(0, (Math.PI / 2), 0);
    },
    yRotMinus: function (event) {
      console.log("yRotMinus");
-     this.rotate(0, -90, 0);
+     this.rotateRelative(0, -(Math.PI / 2), 0);
    },
    zRotPlus: function (event) {
      console.log("zRotPlus");
-     this.rotate(0, 0, 90);
+     this.rotateRelative(0, 0, (Math.PI / 2));
    },
    zRotMinus: function (event) {
      console.log("zRotMinus");
-     this.rotate(0, 0, -90);
+     this.rotateRelative(0, 0, -(Math.PI / 2));
    },
    drop: function (event) {
      // instant 5x multiplier to shape-fall speed.
@@ -506,6 +601,8 @@ AFRAME.registerComponent('falling', {
          // we found a component that can't move.
          // So the whole object can't move.
          canMove = false;
+
+         logXYZ("Object at this position can't move", worldPosition, 2, true);
          break;
        }
      }
@@ -516,6 +613,10 @@ AFRAME.registerComponent('falling', {
    tick: function (time, timeDelta) {
      // Check whether we crossed over a time boundary.
      //console.log("CLOCK: Tick called");
+
+     // We are assuming tick won't be called while we are
+     // testing out a new position.
+     console.assert(!this.testingNewPosition);
 
      // Only blocks that haven't landed fall.
      if (!this.landed) {
@@ -532,7 +633,7 @@ AFRAME.registerComponent('falling', {
          // Speed should be GRID_UNIT distance per this.interval msecs.
          if (timeDelta > 0) {
            distanceToFall = (GRID_UNIT * timeDelta) / this.interval;
-           justLanded = !(this.move(0, -distanceToFall, 0));
+           justLanded = !(this.moveRelative(0, -distanceToFall, 0));
          }
        }
        else {
@@ -545,7 +646,7 @@ AFRAME.registerComponent('falling', {
          if (remainderNow < lastRemainder) {
            // We just crossed a time interval.  So make the object descend.
 
-           justLanded = !(this.move(0, GRID_UNIT, 0));
+           justLanded = !(this.moveRelative(0, GRID_UNIT, 0));
          }
        }
 
@@ -565,7 +666,7 @@ AFRAME.registerComponent('falling', {
          this.el.emit('landed');
 
          // Deactivate controls for this shape.
-         // Unecessary as we're about to destory the object anyway.
+         // Unecessary as we're about to destroy the object anyway.
          //this.el.setAttribute('key-bindings', `debug:true;bindings:none`);
 
          this.arena.checkConsistency();
@@ -578,6 +679,10 @@ AFRAME.registerComponent('falling', {
          // destroy this shape (child blocks are in the process of being
          // re-created outside this context)
          this.el.parentNode.removeChild(this.el);
+
+         // Don't worry about the Proxy - we clean that up at the point we
+         // create a new one.
+
        }
      }
    },
@@ -704,7 +809,7 @@ AFRAME.registerComponent('arena', {
     for (ii = 0; ii < clonedCellsArray.length; ii++) {
       for (jj = 0; jj < clonedCellsArray[ii].length; jj++) {
         for (kk = 0; kk < clonedCellsArray[ii][jj].length; kk++) {
-          console.log (ii + " " + jj + " " + kk);
+          //console.log (ii + " " + jj + " " + kk);
           if (clonedCellsArray[ii][jj][kk] !== 0) {
             console.log("Found cells Array data with no corresponding object");
             console.log(`Layer: ${ii}, x: ${jj}, z: ${kk}`);
@@ -936,3 +1041,12 @@ AFRAME.registerComponent('integration-tracker', {
     arena.blockIntegrated();
   }
 });
+
+function logXYZ(text, pos, dp, debug = false) {
+
+  var logtext = `${text} x: ${pos.x.toFixed(dp)}, y: ${pos.y.toFixed(dp)}, z: ${pos.z.toFixed(dp)}\n`
+  if (debug) {
+    console.log(logtext);
+  }
+  return (logtext);
+}
