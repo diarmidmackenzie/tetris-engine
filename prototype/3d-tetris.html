@@ -1,0 +1,35 @@
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@2.0.0/dist/aframe-environment-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-extras@6.1.0/dist/aframe-extras.min.js"></script>
+    <!--<script src="https://unpkg.com/super-hands/dist/super-hands.min.js"></script>-->
+    <script src="tetris.js"></script>
+    <script src="key-bindings.js"></script>
+
+  </head>
+  <body>
+    <a-scene cursor="rayOrigin: mouse;" raycaster="far: 100; objects: [link];">
+      <a-entity id="rig" movement-controls>
+        <a-entity camera position="0 1.6 0" look-controls accesskey="">
+        </a-entity>
+      </a-entity>
+
+      <a-mixin id="cube" geometry="primitive: box;"
+               scale="0.1 0.1 0.1"
+               shadow></a-mixin>
+
+      <a-entity environment="preset: forest; dressingAmount: 500"></a-entity>
+      <a-entity light="type:directional; castShadow:true;" position='0 20 0'></a-entity>
+
+      <a-entity id='shape-gen' shapegenerator  position = "0 2.0 -2"></a-entity>
+      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #log-panel"></a-entity>
+      <a-plane show-data shadow="receive:true" height="0.5" width="0.5" rotation="-90 0 0" id="arena" arena="x: 5; z: 5" position = "0 0.5 -2" ></a-plane>
+      <a-text id="log-panel" value="Score" position="1 1.8 -2" color="black"></a-text>
+      <a-text position="-3 3 -3" color="black" value="Controls:YGHJ (like WASD) to Move.\nRotation is on the Number pad...\n
+                                                      7/8 for Z-axis (roll)\n4/6 for Y-axis (yaw)\n8/5 for X-axis (pitch).\n  Space to drop.  Refresh to restart."></a-text>
+
+      <a-sky color="#ECECEC"></a-sky>
+    </a-scene>
+  </body>
+</html>

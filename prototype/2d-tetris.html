@@ -1,0 +1,44 @@
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@2.0.0/dist/aframe-environment-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-extras@6.1.0/dist/aframe-extras.min.js"></script>
+    <script src="tetris.js"></script>
+    <script src="key-bindings.js"></script>
+
+  </head>
+  <body>
+    <a-scene cursor="rayOrigin: mouse;" raycaster="far: 100; objects: [link];">
+      <!-- Movement thanks to: https://jgbarah.github.io/aframe-playground/interaction-01/ -->
+      <a-entity id="rig" movement-controls>
+        <a-entity camera position="0 1.6 0" look-controls accesskey="">
+        </a-entity>
+      </a-entity>
+
+      <a-mixin id="cube" geometry="primitive: box;"
+               scale="0.1 0.1 0.1"
+               shadow></a-mixin>
+
+      <a-entity environment="preset: forest; dressingAmount: 500"></a-entity>
+      <a-entity light="type:directional; castShadow:true;" position='0 20 0'></a-entity>
+      <!-- Putting the dropper exactly above an arena with an even number of spaces creates
+      ambuiguous intent.
+      So we are careful to set this a half-block to the right of the arena center
+      Note this adjustment is not required for dimensions of odd-number
+      (in fact it would be undesirable, as it would introduce the same ambiguity) -->
+      <a-entity id='shape-gen' shapegenerator="shapes:EEE,EEU,EED,EUE,EDE,EUDE,EUW;
+                                              keys:KeyZ=xminus,
+                                                   KeyX=xplus,
+                                                   Enter=zRotMinus,
+                                                   ShiftRight=zRotPlus,
+                                                   Space=drop"
+                                              position = "0.05 2.0 -2"></a-entity>
+      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #log-panel"></a-entity>
+      <a-plane show-data shadow="receive:true" height="0.1" width="1.0" rotation="-90 0 0" id="arena" arena="x: 10; z: 1" position = "0 0.5 -2" ></a-plane>
+      <a-text id="log-panel" value="Score" position="1 1.8 -2" color="black"></a-text>
+      <a-text position="-2 3 -2" color="black" value="Controls:Z/X to move L/R\nEnter/Shift to Rotate cw/ccw.  Space to drop.  Refresh to restart."></a-text>
+
+      <a-sky color="#ECECEC"></a-sky>
+    </a-scene>
+  </body>
+</html>
