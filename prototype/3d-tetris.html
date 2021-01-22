@@ -22,6 +22,7 @@
       <a-entity environment="preset: forest; dressingAmount: 500"></a-entity>
       <a-entity light="type:directional; castShadow:true;" position='0 20 0'></a-entity>
 
+      <!-- shapegenerator defaults to a 3D Tetris config-->
       <a-entity id='shape-gen' shapegenerator  position = "0 2.0 -2"></a-entity>
       <a-entity tetrisgame="generator: #shape-gen; scoreboard: #log-panel"></a-entity>
       <a-plane show-data shadow="receive:true" height="0.5" width="0.5" rotation="-90 0 0" id="arena" arena="x: 5; z: 5" position = "0 0.5 -2" ></a-plane>
