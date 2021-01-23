@@ -735,7 +735,10 @@ AFRAME.registerComponent('snap', {
   }
 });
 
-// Arena "position" is at the (near left - check!) corner
+// Arena "position" is at center of the arena floor.
+// This should be either directly below the dropper (when the arena dimension is
+// odd) or half a block width offset from the dropper (when the arena dimension
+// is even.
 AFRAME.registerComponent('arena', {
   dependencies: ['position'],
 
