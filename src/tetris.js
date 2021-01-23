@@ -16,7 +16,8 @@ const cloneArray = (items) => items.map(item => Array.isArray(item) ? cloneArray
 // Overall game controller.
 AFRAME.registerComponent('tetrisgame', {
   schema: {
-    generator: {type: 'string', default: ''}
+    generator: {type: 'string', default: ''},
+    scoreboard: {type: 'string', default: "#scoreboard"}
   },
 
   // This caused problems (leads to shapegenerator init/update being calles with default values)
@@ -104,7 +105,11 @@ AFRAME.registerComponent('shapegenerator', {
                                                  Numpad6=yRotMinus,
                                                  Numpad7=zRotMinus,
                                                  Numpad9=zRotPlus,
-                                                 Space=drop`]}
+                                                 Space=drop`]},
+    debug:          {type: 'boolean', default: false},
+    logger1:        {type: 'string', default: "#log-panel1"},
+    logger2:        {type: 'string', default: "#log-panel2"}
+
   },
   init: function () {
     this.shapeIndex = 0;
@@ -131,6 +136,11 @@ AFRAME.registerComponent('shapegenerator', {
   },
 
   update: function () {
+
+    // String representing debug mode, to use to configure components.
+    this.debugString = this.data.debug ? "debug:true" : "debug: false";
+    this.logger1String = this.data.debug ? `logger:${this.data.logger1}` : "";
+    this.logger2String = this.data.debug ? `logger:${this.data.logger2}` : "";
 
     // clear out any previous shape models.
     this.shapeModels = [];
@@ -259,7 +269,7 @@ AFRAME.registerComponent('shapegenerator', {
     }
 
     entityEl.setAttribute('class', 'proxy');
-    entityEl.setAttribute('sixdof-control-proxy', `controller:#rhand;target:#${shapeId};logger:#log-panel2;debug:true`);
+    entityEl.setAttribute('sixdof-control-proxy', `controller:#rhand;target:#${shapeId};${this.debugString};${this.logger2String}`);
     //entityEl.setAttribute('snap', `snap: ${GRID_UNIT} ${GRID_UNIT} ${GRID_UNIT}`);
 
     // Now finalize the object by attaching it to the scene.
@@ -285,7 +295,7 @@ AFRAME.registerComponent('shapegenerator', {
     entityEl.setAttribute('class', 'shape');
     entityEl.setAttribute('falling', "interval:1000; arena: #arena");
     entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
-    entityEl.setAttribute('sixdof-object-control', `proxy:#${shapeProxyId};logger:#log-panel;debug:true;movement:events`);
+    entityEl.setAttribute('sixdof-object-control', `proxy:#${shapeProxyId};movement:events;${this.debugString};${this.logger1String}`);
     //entityEl.setAttribute('snap', `snap: ${GRID_UNIT} ${GRID_UNIT} ${GRID_UNIT}`);
 
     // Now finalize the object by attaching it to the scene.
