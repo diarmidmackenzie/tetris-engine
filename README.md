@@ -70,7 +70,7 @@ These controls are far from perfect, and I expect to make changes, and add custo
 From JSDelivr CDN:
 
 ```
-<script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/tetris-engine@v0.1-alpha/src/tetris-engine.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/tetris-engine@v0.1-alpha/src/tetris.min.js"></script>
 ```
 
 There are also some dependencies you'll need from other repos:
