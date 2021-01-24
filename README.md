@@ -31,9 +31,11 @@ In terms of compatibility for VR headsets and other XR devices...
 
 ### "I Just Want To Play The Game..."
 
-Hosted versions of the example games (and probably some more variations too is something I am actively working on).
+Hosted versions of the example games can be found here:
 
-I will put links here as soon as I have them...
+https://diarmidmackenzie.pythonanywhere.com/tetris/
+
+These are not necessarily running the very latest code, but I try to push updates fairly often.
 
 
 
@@ -41,6 +43,7 @@ I will put links here as soon as I have them...
 
 On keyboard, the controls are completely customizable.  The example games use:
 
+- All games: Backspace to start, or restart mid-game.
 - For 2D games:
   - Z/X for L/R, Enter/RShift for rotate, Space to drop.
 - For 3D games:
@@ -53,12 +56,10 @@ On keyboard, the controls are completely customizable.  The example games use:
 
 On a VR 6DoF controller, the controls are the same for 2D and 3D games, and cannot currently be customized.
 
+- A to start, or restart mid-game.
 - Hold grip down and move to move the shape (in the x-z plane only)
-
 - Hold trigger down and rotate the controller to rotate the object.
-
 - Holding grip + trigger at the same time allows simultaneous rotation and movement.
-
 - There is no control to "drop" a block - blocks fall at a constant (slow) speed.
 
 These controls are far from perfect, and I expect to make changes, and add customization options in the near future.
@@ -89,11 +90,11 @@ If you want 6DoF controls for VR:
 
 If you want keyboard controls for 2D browser:
 
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@v0.1-alpha/key-bindings.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@latest/key-bindings.min.js"></script>
 And if you want to simulate a 6DoF controller using a computer keyboard (for debugging purposes: not recommended for actual gameplay!)
 
 ```
-<script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.1-alpha/src/keyboard-hand-controls.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@latest/src/keyboard-hand-controls.min.js"></script>
 ```
 
 
@@ -120,10 +121,19 @@ Details on the properties to set for the components in 3, 4 & 5 are covered belo
 
 #### tetrisgame
 
-A very simple component, configured with 2 properties:
+A very simple component, configured with 3 properties:
 
-- generator: The element ID of the shape generator used in this game.  This is not defaulted, so must be specified.
+- generator: The element ID of the shape generator used in this game.  Default value is: #shapegenerator.
 - scoreboard: The element ID of an <a-text> element used to report the score.  This is mandatory, and the element must exist (if you don't want to show scores, just define an element and make it invisible).  Default value is "#scoreboard".
+- arena: The element ID of the arena used in the game.  Default value is: #arena.
+
+The game is started, or restarted, by generating the event "start" on the entity on which tetrisgame is configured.  This can be set in HTML using the latest key-bindings.js (see above), for example by setting this: property, which sets the Backspace Key, and A button controller on the right hand, to start controls.
+
+```
+key-bindings="debug:true;bindings:Backspace=start,#rhand.abuttondown=start"
+```
+
+See key-binding.js docs & example HTML for more on this.
 
 #### shapegenerator
 
@@ -225,8 +235,6 @@ The headline promise is that: "With just a few lines of HTML, you can put a fall
 In reality we're not there yet...  The code is still at a very early alpha stage.
 
 Biggest limitations to be aware of:
-
-- There is no game start/stop control.  Only way to restart the game is to refresh your browser.  This is a high priority to address.
 
 - There are no options to customize 6DoF controls.
 

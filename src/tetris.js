@@ -16,7 +16,8 @@ const cloneArray = (items) => items.map(item => Array.isArray(item) ? cloneArray
 // Overall game controller.
 AFRAME.registerComponent('tetrisgame', {
   schema: {
-    generator: {type: 'string', default: ''},
+    generator: {type: 'string', default: '#shapegenerator'},
+    arena: {type: 'string', default: '#arena'},
     scoreboard: {type: 'string', default: "#scoreboard"}
   },
 
@@ -31,51 +32,74 @@ AFRAME.registerComponent('tetrisgame', {
     this.scoreboard = document.querySelector(this.data.scoreboard);
     this.score = 0;
     this.scoreboard.setAttribute("text", "value: Score:" + this.score);
+    this.listeners = {
+      'startGame': this.startGame.bind(this),
+      'shapeCreated': this.shapeCreated.bind(this),
+      'shapeLanded': this.shapeLanded.bind(this)
+    }
 
     this.layersRemoved = this.onLayersRemoved.bind(this);
 
     // Find and store the arena, and register for events that affect the score.
-    const arenaElement = document.querySelector('#arena');
+    this.arena = document.querySelector(this.data.arena);
+    this.arena.addEventListener("layers-removed",
+                                this.layersRemoved);
 
-    arenaElement.addEventListener("layers-removed",
-                                  this.layersRemoved);
-
-    // Find & store the shape generator
-    const generatorObj = document.querySelector(this.data.generator);
-    const generator = generatorObj.components.shapegenerator;
+    // ALso get some references to the shape generator.
+    this.generator = document.querySelector(this.data.generator);
+    this._generator = this.generator.components.shapegenerator;
 
     console.log(`Generator: ${this.data.generator}`);
-    console.log(`Resolved to: ${generatorObj}`);
-    console.log(`Resolved to: ${generator}`);
+    console.log(`Resolved to: ${this.generator}`);
+    console.log(`With internal component: ${this._generator}`);
 
-    if (!generatorObj) {
+    if (!this.generator) {
       console.log("Error - couldn't attach to shape generator")
     }
 
-    generatorObj.addEventListener("new-shape", function (event) {
-      // New shape generated.  Attach to it and track for landing.
+    this.generator.addEventListener("new-shape", this.listeners.shapeCreated);
 
-      var shapeId = event.detail.shapeId;
-      var shape = document.querySelector(shapeId);
-      console.log("shapeId: " + shapeId);
-      console.log("shape: " + shape);
+    // Finally, we need to register for the "start" event on this object.
+    // That comes from outside this component, depending on the desired "start"
+    // mechanic.  See README and Examples for how this can be done.
+    this.el.addEventListener("start", this.listeners.startGame);
+  },
 
-      shape.addEventListener("landed", function () {
+  shapeCreated: function(event) {
+    // New shape generated.  Attach to it and track for landing.
 
-        // When one shape lands, we generate the next.
-        console.log("Landed event detected");
-        console.log("Create another shape");
+    var shapeId = event.detail.shapeId;
+    var shape = document.querySelector(shapeId);
+    console.log("shapeId: " + shapeId);
+    console.log("shape: " + shape);
 
-        // This is a hack, need a cleaner way to interface with the arena
-        // from this callback.  Bind a function or similar...
-        if (!this.components.falling.arena.gameOverIndicator) {
-          generator.generateShape();
-        }
-      });
-    });
+    shape.addEventListener("landed", this.listeners.shapeLanded);
+  },
 
-    // All set up, now generate the first shape.
-    generator.generateShape();
+  shapeLanded: function() {
+    // When one shape lands, we generate the next.
+    console.log("Landed event detected");
+    console.log("Create another shape");
+
+    if (!this._arena.gameOverIndicator) {
+      this._generator.generateShape();
+    }
+
+  },
+
+  startGame: function() {
+
+    // We may be mid-game, or at game over, so clear the arena first.
+    this._arena = this.arena.components.arena;
+    this._arena.clearArena();
+
+    // Reset the score to zero.
+    this.score = 0;
+    this.scoreboard.setAttribute("text", "value: Score:" + this.score);
+
+    // All ready, now generate the first shape.
+    // This will also delete any shape & associated proxy that was in-flight.
+    this._generator.generateShape();
   },
 
   onLayersRemoved: function(event) {
@@ -242,6 +266,15 @@ AFRAME.registerComponent('shapegenerator', {
      }
    },
 
+  deleteAllObjectsWithClass: function(targetClass) {
+
+    var elementsToDelete = document.querySelectorAll(targetClass);
+    for (var ii = 0; ii < elementsToDelete.length; ii++) {
+      console.log("Destroying element:" + elementsToDelete[ii].id);
+      elementsToDelete[ii].parentNode.removeChild(elementsToDelete[ii]);
+    }
+  },
+
   generateShape: function() {
 
     // Create the new shape.
@@ -251,22 +284,23 @@ AFRAME.registerComponent('shapegenerator', {
     var shapeProxyId = "proxy-shape-" + this.shapeIndex;
     modelChoice = Math.floor(Math.random() * (this.shapeModels.length));
 
+    // Before we create the new proxy & new shape, delete the previous ones.
+    // Clearing everything up here keeps things simple & ensures we only ever
+    // have one shape & one proxy in play.
+    this.deleteAllObjectsWithClass('.proxy')
+    this.deleteAllObjectsWithClass('.shape')
+
+    // !! Concern: This will affect elements across the entire A-Frame space.
+    // Care may be needed to avoid name collisions when tetris-engine is used
+    // as part of a broader A-Frame scene.
+    // Shouldn't impact other tetris-engine instances, though, as only one
+    // should be "in play" at a time.""
+
     var entityEl = document.createElement('a-entity');
     entityEl.setAttribute("id", shapeProxyId);
     console.log(`Generating Shape with ID: #${shapeId}`)
     console.log(`Controlled by Proxy with ID: #${shapeProxyId}`)
     this.shapeIndex += 1;
-
-    // Create the Proxy shape first- but before we do that, make sure any
-    // previously created proxies are destroyed.
-    // Shapes are responsible for their own lifecycle through the "falling"
-    // component.  Yes, this is a little inconsistent -
-    // clearing up everything here might be simpler & more robust...
-    staleProxies = document.querySelectorAll('.proxy');
-    for (var ii = 0; ii < staleProxies.length; ii++) {
-      console.log("Destroying stale proxy:" + staleProxies[ii].id);
-      staleProxies[ii].parentNode.removeChild(staleProxies[ii]);
-    }
 
     entityEl.setAttribute('class', 'proxy');
     entityEl.setAttribute('sixdof-control-proxy', `controller:#rhand;target:#${shapeId};${this.debugString};${this.logger2String}`);
@@ -679,20 +713,21 @@ AFRAME.registerComponent('falling', {
          // Unecessary as we're about to destroy the object anyway.
          //this.el.setAttribute('key-bindings', `debug:true;bindings:none`);
 
-         this.arena.checkConsistency();
+         //this.arena.checkConsistency();
 
          // Integrate shape into arena surface.
          this.integrateShapeToArena(this.arena, this.el)
          // Note that arena may be inconsistent now, while new block creation
-         // is underway.
+         // is underway (we delete the block objects that made up the shape,
+         // and create new instances to represent the blocks as they appear
+         // in the arena.
 
-         // destroy this shape (child blocks are in the process of being
-         // re-created outside this context)
-         this.el.parentNode.removeChild(this.el);
-
-         // Don't worry about the Proxy - we clean that up at the point we
-         // create a new one.
-
+         // Destroying of the shape & proxy happens when we spawn a new shape
+         // in.
+         // If the shape gets left around a bit longer (e.g. Game Over with no
+         // new shape spawing), it's no big deal, as it is identical in
+         // appearance to the blocks that replace it.  There will just be 2
+         // identical objects and nobody will notice.
        }
      }
    },
@@ -771,6 +806,29 @@ AFRAME.registerComponent('arena', {
     // Cells is a full 3d map of the whole play area, used
     // to decide where blocks can go, and when layers are completed.
     this.cellsArray = [];
+  },
+
+  clearArena: function() {
+
+    // Iterate through all layers, and delete them.
+    // We just use the same function that we use when layers are completed.
+    // Slightly inefficient, as it iterates trhough all the blocks
+    // once for each layer, but simpler to re-use the code, and should be fast
+    // enough.
+    // We start from the top as that involves much less repositioning of blocks,
+    // and matches how we delete multiple layers in-game.
+
+    for (var ii = this.cellsArray.length - 1; ii >= 0; ii--) {
+      this.removeLayer(ii);
+    }
+
+    // Technically this should be unecessary as cellsArray is cleared
+    // But this gives us a robust assurance that we'll start the new game in a
+    // clean state.
+    this.cellsArray = []
+
+    // clear "Game Over" indication (else new shapes would not spawn).
+    this.gameOverIndicator = false;
   },
 
   gameOver: function() {
@@ -968,7 +1026,7 @@ AFRAME.registerComponent('arena', {
 
     if (this.blocksPendingIntegrationCount == 0) {
 
-      this.checkConsistency();
+      //this.checkConsistency();
 
       var layersRemoved = this.removeAnyCompleteLayers();
 
@@ -976,7 +1034,7 @@ AFRAME.registerComponent('arena', {
         this.el.emit("layers-removed", {count: layersRemoved});
       }
 
-      this.checkConsistency();
+      //this.checkConsistency();
     }
   },
 
@@ -1005,40 +1063,47 @@ AFRAME.registerComponent('arena', {
         layersRemoved ++;
 
         // Remove the layer.
-        // First our basic cell tracking.
-        this.cellsArray.splice(ii, 1);
-
-        // Now we ierate through all blocks in the scene, and for each, we:
-        // - remove it if it's in the vanishing layer
-        // - move it down if it's above the vanishing layer.
-        // - do nothing if it's below.
-        var sceneEl = document.querySelector('a-scene');
-        var blockList = sceneEl.querySelectorAll('.block');
-
-        for (blockIx = 0; blockIx < blockList.length; blockIx++) {
-
-          // Since block objects are parented to the scene, we can
-          // just read (and update) position directly,
-          // no need to access "world position".
-
-          var position = blockList[blockIx].getAttribute('position');
-
-          const cellIndex = this.worldPositionToCellIndices(position, true);
-
-          if (cellIndex.y == ii) {
-            // In this layer.  Destroy the block.
-            sceneEl.removeChild(blockList[blockIx]);
-          }
-          else if (cellIndex.y > ii) {
-            // layer above - move down.
-            position.y -= GRID_UNIT;
-            //blockList[blockIx].flushToDOM();
-          }
-        }
+        this.removeLayer(ii);
       }
     }
     return (layersRemoved);
+  },
+
+  // Function to remove a layer (and remove associated blocks).
+  // This is used when a layer is completed, and also to clear the arena
+  // at the end of the game.
+  removeLayer: function(layer) {
+    // First our basic cell tracking.
+    this.cellsArray.splice(layer, 1);
+
+    // Now we ierate through all blocks in the scene, and for each, we:
+    // - remove it if it's in the vanishing layer
+    // - move it down if it's above the vanishing layer.
+    // - do nothing if it's below.
+    var sceneEl = document.querySelector('a-scene');
+    var blockList = sceneEl.querySelectorAll('.block');
+
+    for (var blockIx = 0; blockIx < blockList.length; blockIx++) {
+
+      // Since block objects are parented to the scene, we can
+      // just read (and update) position directly,
+      // no need to access "world position".
+
+      var position = blockList[blockIx].getAttribute('position');
+
+      const cellIndex = this.worldPositionToCellIndices(position, true);
+
+      if (cellIndex.y == layer) {
+        // In this layer.  Destroy the block.
+        sceneEl.removeChild(blockList[blockIx]);
+      }
+      else if (cellIndex.y > layer) {
+        // layer above - move down.
+        position.y -= GRID_UNIT;
+      }
+    }
   }
+
 });
 
 AFRAME.registerComponent('integration-tracker', {
