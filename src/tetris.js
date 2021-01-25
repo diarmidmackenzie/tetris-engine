@@ -89,17 +89,23 @@ AFRAME.registerComponent('tetrisgame', {
 
   startGame: function() {
 
-    // We may be mid-game, or at game over, so clear the arena first.
     this._arena = this.arena.components.arena;
-    this._arena.clearArena();
 
-    // Reset the score to zero.
-    this.score = 0;
-    this.scoreboard.setAttribute("text", "value: Score:" + this.score);
+    // Only start the game if we are at "Game Over"
+    // (which includes the initial arena state.)
+    if (this._arena.gameOverIndicator) {
 
-    // All ready, now generate the first shape.
-    // This will also delete any shape & associated proxy that was in-flight.
-    this._generator.generateShape();
+      // We may be at game over, so clear the arena first.
+      this._arena.clearArena();
+
+      // Reset the score to zero.
+      this.score = 0;
+      this.scoreboard.setAttribute("text", "value: Score:" + this.score);
+
+      // All ready, now generate the first shape.
+      // This will also delete any shape & associated proxy that was in-flight.
+      this._generator.generateShape();
+    }
   },
 
   onLayersRemoved: function(event) {
@@ -118,6 +124,7 @@ AFRAME.registerComponent('tetrisgame', {
 // Generate shapes.
 AFRAME.registerComponent('shapegenerator', {
   schema: {
+    arena: {type: 'string', default: '#arena'},
     shapes:          {type: 'array', default: ["EEE","EEN","ENE","ENSE","ENW","ENSD","EDN"]},
     keys:            {type: 'string', default: [`KeyY=zminus,
                                                  KeyH=zplus,
@@ -327,7 +334,7 @@ AFRAME.registerComponent('shapegenerator', {
     entityEl.setAttribute("id", shapeId);
     entityEl.setAttribute('position', this.el.object3D.position);
     entityEl.setAttribute('class', 'shape');
-    entityEl.setAttribute('falling', "interval:1000; arena: #arena");
+    entityEl.setAttribute('falling', `interval:1000; arena: ${this.data.arena}`);
     entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
     entityEl.setAttribute('sixdof-object-control', `proxy:#${shapeProxyId};movement:events;${this.debugString};${this.logger1String}`);
     //entityEl.setAttribute('snap', `snap: ${GRID_UNIT} ${GRID_UNIT} ${GRID_UNIT}`);
@@ -788,7 +795,9 @@ AFRAME.registerComponent('arena', {
     this.width = this.data.x;
     this.depth = this.data.z;
     this.blocksPendingIntegrationCount = 0
-    this.gameOverIndicator = false;
+
+    // "Game Over" at start - set to false when game is started.
+    this.gameOverIndicator = true;
 
     // Falling blocks are tracked by the center of the block.
     // The cornerOffset is the offset between the arena "position"

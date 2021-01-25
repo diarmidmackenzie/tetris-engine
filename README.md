@@ -139,6 +139,8 @@ See key-binding.js docs & example HTML for more on this.
 
 The properties that can be set on this component are:
 
+- arena: The element ID of the arena used in the game.  Default value is: #arena.
+
 - shapes: An array of strings indicating the set of shapes to use in the game.  They are all generated with equal probability.  Examples of such strings are EEE (a 4-long block) and EED (a classic "knight's move" L shape).  See below for how these strings are defined.  There's currently a limit of 14 different shapes.
 
 - keys: A mapping of keys to events, which defines the keyboard controls for the game.  The format of the string is as used by the key-bindings.js component.  The events mapped to are:
