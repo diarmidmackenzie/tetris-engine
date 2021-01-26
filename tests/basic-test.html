@@ -1,0 +1,47 @@
+<!-- A basic version of 1-block 3D Tetris for testing-->
+<!-- keyboard controls only, 2 x 2 grid, 2x1 blocks -->
+
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@latest/key-bindings.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.1-alpha/src/6dof-object-control.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@latest/src/keyboard-hand-controls.min.js"></script>
+    <script src="../src/tetris.js"></script>
+  </head>
+  <body>
+    <a-scene renderer="colorManagement:true">
+      <a-entity id="rig">
+        <a-entity camera position="0 1.6 0">
+        </a-entity>
+      </a-entity>
+      <a-mixin id="cube" geometry="primitive: box;"
+               scale="0.1 0.1 0.1"
+               shadow></a-mixin>
+      <a-entity id='shape-gen' shapegenerator="shapes:,;
+                                              keys:KeyA=xminus,
+                                                   KeyS=xplus,
+                                                   KeyW=zminus,
+                                                   KeyS=zplus,
+                                                   Space=drop;
+                                                   debug:true;
+                                                   logger1:#log-panel1;
+                                                   logger2:#log-panel2"
+                                              position = "0.0 2.0 -1"></a-entity>
+      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="debug:true;bindings:Enter=start></a-entity>
+
+      <a-plane id="arena" arena="x: 2; z: 2" shadow="receive:true" height="0.1" width="1.0" rotation="-90 0 0" position = "0.05 0.5 -1" ></a-plane>
+
+      <!--Scoreboard, and some text to guide the user-->
+      <a-text id="scoreboard" value="Score" position="3 1 -3" color="black"></a-text>
+      <a-text position="-6 1 -5" color="black" value="Enter to start\nControls:WASD to move block.  Space to drop."></a-text>
+
+      <!--Some text panels for debug information - only necessary if you are
+          running with debug=true-->
+      <a-text id="log-panel1" value="Panel 1" position="3 3 -5" color="black"></a-text>
+      <a-text id="log-panel2" value="Panel 2" position="-1 3 -5" color="black"></a-text>
+      <a-text id="log-panel3" value="Panel 3" position="-5 3 -5" color="black"></a-text>
+
+    </a-scene>
+  </body>
+</html>

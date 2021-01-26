@@ -1,0 +1,103 @@
+<!-- A basic version of 3D Tetris for testing-->
+<!-- keyboard controls only, 2 x 2 grid, 2x1 blocks -->
+<!-- Two games side-by side, including testing of focus -->
+<!-- Includes event logging set up using event-set__ -->
+
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@4.2.1/dist/aframe-event-set-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@latest/key-bindings.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.1-alpha/src/6dof-object-control.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@latest/src/keyboard-hand-controls.min.js"></script>
+    <script src="../src/tetris.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <a-entity camera position="0 1.6 0.5">
+      </a-entity>
+      <a-entity id="rhand"
+      </a-entity>
+
+      <a-mixin id="cube" geometry="primitive: box;"
+               scale="0.1 0.1 0.1">
+      </a-mixin>
+
+      <!-- Generic instructions-->
+      <a-text position="-2 -1 -5" color="black" value="Focus: 1=game1, 2=game2right, 3=both, 4=neither
+                                                      Enter to start (when not in game)
+                                                      Controls:Z & X to move block.  Space to drop.
+                                                      Controls should impact a game if and only if
+                                                      that game has focus on it."></a-text>
+
+      <!-- Game 1-->
+      <a-entity id='shapegenerator' shapegenerator="shapes:N;keys:KeyZ=xminus,
+                                                    KeyX=xplus,
+                                                    Space=drop"
+                                                    position = "-1 1.6 -1">
+      </a-entity>
+      <a-entity id="game" tetrisgame="focus:true"
+                key-bindings="debug:true;bindings:Enter=start,Digit1=focus,Digit2=defocus,Digit3=focus,Digit4=defocus"
+                event-set__start="_target:#game-events;_event: start; text.value:Start"
+                event-set__gameover="_target:#game-events;_event: game-over; text.value:Game Over"
+                event-set__focus="_target:#game-events;_event: focus; text.value:Focus"
+                event-set__defocus="_target:#game-events;_event: defocus; text.value:Defocus">
+      </a-entity>
+
+      <a-plane id="arena"
+               arena="x: 2; z: 2"
+               height="0.2" width="0.2"
+               rotation="-90 0 0"
+               position = "-1.05 0.8 -1.05"
+               color="red"
+               event-set__arenafull="_target:#arena-events;_event: arena-full; text.value:Arena Full"
+               event-set__layersremoved="_target:#arena-events;_event: layers-removed; text.value:Layers Removed">
+      </a-plane>
+
+      <!--Scoreboard, and some text to guide the user-->
+      <a-text id="scoreboard" value="Score" position="-5 1 -3" color="black"></a-text>
+
+      <!--Some text panels for debug information-->
+      <a-text value="Last Arena1 Event" position="-5 4 -5" color="black"></a-text>
+      <a-text id="arena-events" value="No Events" position="-5 3 -5" color="black"></a-text>
+      <a-text value="Last Game1 Event" position="-7 4 -5" color="black"></a-text>
+      <a-text id="game-events" value="No Events" position="-7 3 -5" color="black"></a-text>
+
+      <!-- Game 2-->
+
+            <a-entity id='shapegenerator2' shapegenerator="shapes:N;
+                                                          keys:KeyZ=xminus,
+                                                          KeyX=xplus,
+                                                          Space=drop;
+                                                          arena:#arena2"
+                                                          position="1 1.6 -1"></a-entity>
+            <a-entity id="game2" tetrisgame="focus:false;generator:#shapegenerator2;;scoreboard:#scoreboard2;focus:false"
+                      key-bindings="debug:true;bindings:Enter=start,Digit1=defocus,Digit2=focus,Digit3=focus,Digit4=defocus"
+                      event-set__start="_target:#game-events2;_event: start; text.value:Start"
+                      event-set__gameover="_target:#game-events2;_event: game-over; text.value:Game Over"
+                      event-set__focus="_target:#game-events2;_event: focus; text.value:Focus"
+                      event-set__defocus="_target:#game-events2;_event: defocus; text.value:Defocus">
+            </a-entity>
+
+            <a-plane id="arena2"
+                     arena="x: 2; z: 2"
+                     height="0.2" width="0.2"
+                     rotation="-90 0 0"
+                     position = "1.05 0.8 -1.05"
+                     color="red"
+                     event-set__arenafull="_target:#arena-events2;_event: arena-full; text.value:Arena Full"
+                     event-set__layersremoved="_target:#arena-events2;_event: layers-removed; text.value:Layers Removed">
+            </a-plane>
+
+            <!--Scoreboard, and some text to guide the user-->
+            <a-text id="scoreboard2" value="Score" position="3 1 -3" color="black"></a-text>
+
+      <!--Some text panels for debug information-->
+      <a-text value="Last Arena2 Event" position="3 4 -5" color="black"></a-text>
+      <a-text id="arena-events2" value="No Events" position="3 3 -5" color="black"></a-text>
+      <a-text value="Last Game2 Event" position="1 4 -5" color="black"></a-text>
+      <a-text id="game-events2" value="No Events" position="1 3 -5" color="black"></a-text>
+
+    </a-scene>
+  </body>
+</html>

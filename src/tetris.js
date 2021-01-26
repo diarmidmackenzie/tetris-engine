@@ -17,7 +17,10 @@ AFRAME.registerComponent('tetrisgame', {
   schema: {
     generator: {type: 'string', default: '#shapegenerator'},
     arena: {type: 'string', default: '#arena'},
-    scoreboard: {type: 'string', default: "#scoreboard"}
+    scoreboard: {type: 'string', default: "#scoreboard"},
+    debug:          {type: 'boolean', default: false},
+    logger:        {type: 'string', default: "#log-panel1"},
+    focus:         {type: 'boolean', default: true}
   },
 
   // This caused problems (leads to shapegenerator init/update being calles with default values)
@@ -32,13 +35,23 @@ AFRAME.registerComponent('tetrisgame', {
     this.score = 0;
     this.scoreboard.setAttribute("text", "value: Score:" + this.score);
     this.gameOver = true; // before game has started, we consider "game over".
+
+    this.focus = this.data.focus;
+
+    this.currentShape = null;
     this.listeners = {
       'startGame': this.startGame.bind(this),
       'shapeCreated': this.shapeCreated.bind(this),
       'shapeLanded': this.shapeLanded.bind(this),
       'layersRemoved': this.onLayersRemoved.bind(this),
-      'arenaFull': this.onArenaFull.bind(this)
+      'arenaFull': this.onArenaFull.bind(this),
+      'focus': this.onFocus.bind(this),
+      'defocus': this.onDefocus.bind(this)
     }
+
+    // Listen for focus events on ourself.
+    this.el.addEventListener("focus", this.listeners.focus);
+    this.el.addEventListener("defocus", this.listeners.defocus);
 
     // Find and store the arena, and register for events that affect the score.
     this.arena = document.querySelector(this.data.arena);
@@ -68,14 +81,15 @@ AFRAME.registerComponent('tetrisgame', {
   },
 
   shapeCreated: function(event) {
+
     // New shape generated.  Attach to it and track for landing.
-
     var shapeId = event.detail.shapeId;
-    var shape = document.querySelector(shapeId);
+    this.currentShape = document.querySelector(shapeId);
     console.log("shapeId: " + shapeId);
-    console.log("shape: " + shape);
+    console.log("shape: " + this.currentShape.id);
 
-    shape.addEventListener("landed", this.listeners.shapeLanded);
+    this.currentShape.addEventListener("landed", this.listeners.shapeLanded);
+
   },
 
   shapeLanded: function() {
@@ -84,7 +98,7 @@ AFRAME.registerComponent('tetrisgame', {
     console.log("Create another shape from generator: " + this.generator.id);
 
     if (!this._arena.arenaFullIndicator) {
-      this._generator.generateShape();
+      this._generator.generateShape(this.focus);
     }
 
   },
@@ -93,7 +107,8 @@ AFRAME.registerComponent('tetrisgame', {
 
     // Only start the game if we are at "Game Over"
     // (which includes the initial arena state.)
-    if (this.gameOver) {
+    // *and* in focus
+    if ((this.gameOver) && (this.focus)) {
 
       // There may be an old game to clear up, so clear the arena first.
       this._arena = this.arena.components.arena;
@@ -108,7 +123,7 @@ AFRAME.registerComponent('tetrisgame', {
 
       // All ready, now generate the first shape.
       // This will also delete any shape & associated proxy that was in-flight.
-      this._generator.generateShape();
+      this._generator.generateShape(this.focus);
     }
   },
 
@@ -127,6 +142,47 @@ AFRAME.registerComponent('tetrisgame', {
     console.log("Game Over")
     this.gameOver = true;
     this.el.emit("game-over")
+  },
+
+  onFocus: function() {
+    // turn controls back on for the current shape.
+    this.focus = true;
+
+    console.log("Focussing " + this.el.id);
+    if (this.currentShape) {
+      console.log("Focussing " + this.currentShape.id);
+      this.currentShape.emit("focus");
+    }
+
+    // Any changes to displayed text, content etc. in the scene is best
+    // handled using event-set, and the _target: selector on the tetrisgame
+    // element.
+
+  },
+
+  onDefocus: function() {
+    // turn controls off for the current shape.
+    this.focus = false;
+    console.log("Defocussing " + this.el.id);
+    if (this.currentShape) {
+      console.log("Defocussing " + this.currentShape.id);
+      this.currentShape.emit("defocus");
+    }
+
+    // Any changes to displayed text, content etc. in the scene is best
+    // handled using event-set, and the _target: selector on the tetrisgame
+    // element.
+  },
+  tick: function() {
+
+    if (this.data.debug) {
+      var logtext = `Focus: ${this.focus}\n`
+      if (this.currentShape) {
+        logtext += `Shape Focus: ${this.currentShape.components.falling.infocus}\n`
+      }
+      var logPanel = document.querySelector(this.data.logger);
+      logPanel.setAttribute('text', "value: " + logtext);
+    }
   }
 
 });
@@ -148,6 +204,7 @@ AFRAME.registerComponent('shapegenerator', {
                                                  Numpad7=zRotMinus,
                                                  Numpad9=zRotPlus,
                                                  Space=drop`]},
+    camera:         {type: 'string', default: ""},  // experimental
     debug:          {type: 'boolean', default: false},
     logger1:        {type: 'string', default: "#log-panel1"},
     logger2:        {type: 'string', default: "#log-panel2"}
@@ -183,6 +240,22 @@ AFRAME.registerComponent('shapegenerator', {
     this.debugString = this.data.debug ? "debug:true" : "debug: false";
     this.logger1String = this.data.debug ? `logger:${this.data.logger1}` : "";
     this.logger2String = this.data.debug ? `logger:${this.data.logger2}` : "";
+
+    /* This is experimental function where controls are enabled/disabled
+    * based on direction of view.
+    * it is dependent on the "attention" component.
+    * Not clear whether this is a good mechanism, and whether we should maintain
+    * it.  Proximity-based solutions are probably simpler */
+    if (this.data.camera !== "") {
+      this.camera = document.querySelector(this.data.camera)
+      this.attentionTracking = true;
+    }
+    else {
+      this.attentionTracking = false;
+    }
+    /* End experimental code */
+
+
 
     // clear out any previous shape models.
     this.shapeModels = [];
@@ -293,7 +366,7 @@ AFRAME.registerComponent('shapegenerator', {
     }
   },
 
-  generateShape: function() {
+  generateShape: function(focus) {
 
     // Create the new shape.
     var sceneEl = document.querySelector('a-scene');
@@ -346,9 +419,21 @@ AFRAME.registerComponent('shapegenerator', {
     entityEl.setAttribute("id", shapeId);
     entityEl.setAttribute('position', this.el.object3D.position);
     entityEl.setAttribute('class', shapeClass);
-    entityEl.setAttribute('falling', `interval:1000; arena: ${this.data.arena}`);
+    entityEl.setAttribute('falling', `interval:1000; arena: ${this.data.arena}; infocus: ${focus}`);
     entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
     entityEl.setAttribute('sixdof-object-control', `proxy:#${shapeProxyId};movement:events;${this.debugString};${this.logger1String}`);
+    /* This is experimental function where controls are enabled/disabled
+    * based on direction of view.
+    * it is dependent on the "attention" component.
+    * Not clear whether this is a good mechanism, and whether we should maintain
+    * it.  Proximity-based solutions are probably simpler */
+    if (this.attentionTracking) {
+      entityEl.setAttribute('attention', `target:${"#" + this.camera.id}`);
+    }
+    /* End experimental code */
+
+    // We have not used snap in a while.  Concerns about y-axis, and general not
+    // necessary, it seems.
     //entityEl.setAttribute('snap', `snap: ${GRID_UNIT} ${GRID_UNIT} ${GRID_UNIT}`);
 
     // Now finalize the object by attaching it to the scene.
@@ -390,6 +475,7 @@ AFRAME.registerComponent('falling', {
      interval: {type: 'number'},
      arena: {type: 'string'},
      shapeindex: {type: 'string'},
+     infocus: {type: 'boolean', default: true}
    },
 
    init: function () {
@@ -397,6 +483,7 @@ AFRAME.registerComponent('falling', {
      this.arena = document.querySelector(this.data.arena).components.arena;
      this.interval = this.data.interval;
      this.startHeight = this.el.object3D.position.y;
+     this.infocus = this.data.infocus;
 
      // watch for race conditions.
      this.testingNewPosition = false;
@@ -414,16 +501,37 @@ AFRAME.registerComponent('falling', {
        yRotPlus: this.yRotPlus.bind(this),
        zRotPlus: this.zRotPlus.bind(this),
        zRotMinus: this.zRotMinus.bind(this),
-       drop: this.drop.bind(this)
+       drop: this.drop.bind(this),
+       focus: this.onFocus.bind(this),
+       defocus: this.onDefocus.bind(this)
      };
    },
 
    play: function () {
-     this.attachEventListeners();
+
+     if (this.infocus) {
+       this.attachEventListeners();
+     }
+     else {
+       this.el.addEventListener('focus', this.listeners.focus, false);
+       this.el.addEventListener('defocus', this.listeners.defocus, false);
+     }
    },
 
    pause: function () {
      this.removeEventListeners();
+   },
+
+   onFocus: function () {
+     console.log("Focussing " + this.el.id);
+     this.attachEventListeners();
+     this.infocus = true;
+   },
+
+   onDefocus: function () {
+     console.log("Defocussing " + this.el.id);
+     this.removeEventListeners();
+     this.infocus = false;
    },
 
    remove: function () {
@@ -447,6 +555,10 @@ AFRAME.registerComponent('falling', {
      this.el.addEventListener('zRotMinus', this.listeners.zRotMinus, false);
      this.el.addEventListener('zRotPlus', this.listeners.zRotPlus, false);
      this.el.addEventListener('drop', this.listeners.drop, false);
+     this.el.addEventListener('focus', this.listeners.focus, false);
+     this.el.addEventListener('defocus', this.listeners.defocus, false);
+
+     // Note: We never remove focus/defocus Event Listeners.
    },
 
    removeEventListeners: function () {
@@ -466,6 +578,8 @@ AFRAME.registerComponent('falling', {
      this.el.removeEventListener('zRotMinus', this.listeners.zRotMinus);
      this.el.removeEventListener('zRotPlus', this.listeners.zRotPlus);
      this.el.removeEventListener('drop', this.listeners.drop);
+
+     // Note: We never remove focus/defocus Event Listeners.
    },
 
    moveEventHandler: function(event) {
@@ -487,7 +601,7 @@ AFRAME.registerComponent('falling', {
      var oldPosition = AFRAME.utils.clone(this.el.object3D.position);
      this.testingNewPosition = true;
      this.el.setAttribute('position', newPosition)
-     logXYZ("Trying to move shape to:", newPosition, 2, true);
+     //logXYZ("Trying to move shape to:", newPosition, 2, true);
 
      if (this.canShapeMoveHere(this.el, {'x': 0, 'y': 0, 'z': 0})) {
        // The move worked fine.
@@ -1026,7 +1140,7 @@ AFRAME.registerComponent('arena', {
                                        ${worldPosition.y}
                                        ${worldPosition.z}`)
     entityEl.setAttribute('class', 'block' + this.el.id);
-    entityEl.setAttribute('integration-tracker', "arena: #arena");
+    entityEl.setAttribute('integration-tracker', `arena: #${this.el.id}`);
     sceneEl.appendChild(entityEl);
     this.blocksPendingIntegrationCount++;
 
