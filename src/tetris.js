@@ -702,7 +702,7 @@ AFRAME.registerComponent('falling', {
      // the event data just contains the abolute new position.
 
      console.log("Move Event from 6DOF Controller")
-     logXYZ("Move data: ", event.detail, 2, true);
+     TETRISlogXYZ("Move data: ", event.detail, 2, true);
 
      // Overwrite the y data point with the current position.
      event.detail.y = this.el.object3D.position.y;
@@ -714,9 +714,12 @@ AFRAME.registerComponent('falling', {
      // Is the new position viable?
      // Just move the shape, and see how it goes.
      var oldPosition = AFRAME.utils.clone(this.el.object3D.position);
+
+     //TETRISlogXYZ("Testing movement to position: ", this.el.object3D.position, 2, true);
      this.testingNewPosition = true;
      this.el.setAttribute('position', newPosition)
-     //logXYZ("Trying to move shape to:", newPosition, 2, true);
+     //TETRISlogXYZ("Trying to move shape to:", newPosition, 2, true);
+     //TETRISlogAllBlockPositions(this.el);
 
      if (this.canShapeMoveHere(this.el, {'x': 0, 'y': 0, 'z': 0})) {
        // The move worked fine.
@@ -724,7 +727,10 @@ AFRAME.registerComponent('falling', {
      }
      else {
        // revert.
+       //TETRISlogXYZ("Undoing position move to: ", this.el.object3D.position, 2, true);
        this.el.setAttribute('position', oldPosition)
+       //TETRISlogXYZ("Reverted to: ", this.el.object3D.position, 2, true);
+       //TETRISlogAllBlockPositions(this.el);
        moved = false;
      }
      this.testingNewPosition = false;
@@ -757,7 +763,7 @@ AFRAME.registerComponent('falling', {
      // the event data contains the Euler for the abolute new rotation.
 
      console.log("Rotate Event from 6DOF Controller")
-     logXYZ("Rotate data: ", event.detail, 1, true);
+     TETRISlogXYZ("Rotate data: ", event.detail, 1, true);
 
      var quaternion = new THREE.Quaternion();
      quaternion.setFromEuler(event.detail)
@@ -766,28 +772,39 @@ AFRAME.registerComponent('falling', {
 
    rotateAbsolute: function(quaternion) {
 
-     logQuat("Trying to rotate shape to:", quaternion, 1, true);
+     TETRISlogQuat("Trying to rotate shape to:", quaternion, 1, true);
 
      // Before we rotate, save off the old quaternion.
      var oldQuaternion = new THREE.Quaternion();
+     oldQuaternion.copy(this.el.object3D.quaternion);
 
      // Apply the new (absolute) rotation.
      // Copy, not multiply, as this is an absolute rotation,
      // not a relative one.
+     TETRISlogXYZ("Testing rotation at position: ", this.el.object3D.position, 2, true);
+
+     console.log("pre-rotation");
+     TETRISlogAllBlockPositions(this.el);
      this.testingNewPosition = true;
      this.el.object3D.quaternion.copy(quaternion);
+
+     console.log("post-rotation");
+     TETRISlogAllBlockPositions(this.el);
 
      var rotated;
      // Is the new position viable?
      if (this.canShapeMoveHere(this.el, {'x': 0, 'y': 0, 'z': 0})) {
        // Yes, the move is viable.  Leave it in place.
-
+       TETRISlogXYZ("Completed rotation at position: ", this.el.object3D.position, 2, true);
+       TETRISlogAllBlockPositions(this.el);
        rotated = true;
      }
      else {
        // Undo the rotation.
+       TETRISlogXYZ("Undoing rotation at position: ", this.el.object3D.position, 2, true);
        this.el.object3D.quaternion.copy(oldQuaternion);
        rotated = false;
+       TETRISlogAllBlockPositions(this.el);
      }
      this.testingNewPosition = false;
 
@@ -894,8 +911,12 @@ AFRAME.registerComponent('falling', {
          // So the whole object can't move.
          canMove = false;
 
-         logXYZ("Object at this position can't move", worldPosition, 2, true);
+         TETRISlogXYZ("Block at this position can't move", worldPosition, 2, true);
+         TETRISlogXYZ("Parent shape position is", this.el.object3D.position, 2, true);
          break;
+       }
+       else {
+         //TETRISlogXYZ("Block at this position is OK", worldPosition, 2, true);
        }
      }
 
@@ -925,6 +946,7 @@ AFRAME.registerComponent('falling', {
          // Speed should be GRID_UNIT distance per this.interval msecs.
          if (timeDelta > 0) {
            distanceToFall = (GRID_UNIT * timeDelta) / this.interval;
+           //TETRISlogXYZ("Object falling at position: ", this.el.object3D.position, 2, true);
            justLanded = !(this.moveRelative(0, -distanceToFall, 0));
          }
        }
@@ -1368,10 +1390,36 @@ AFRAME.registerComponent('integration-tracker', {
   }
 });
 
-function logXYZ(text, pos, dp, debug = false) {
+/* General utility functions.  SHould work on a cleaner way to organize these */
+
+function TETRISlogXYZ(text, pos, dp, debug = false) {
 
   var logtext = `${text} x: ${pos.x.toFixed(dp)}, y: ${pos.y.toFixed(dp)}, z: ${pos.z.toFixed(dp)}\n`
   if (debug) {
+    console.log(logtext);
+  }
+  return (logtext);
+}
+
+function TETRISlogAllBlockPositions(element) {
+  childrenArray = Array.from(element.childNodes);
+  var worldPosition = new THREE.Vector3();
+
+  for (ii = 0; ii < childrenArray.length; ii++) {
+    // Need to get absolute position of each component block.
+    childrenArray[ii].object3D.getWorldPosition(worldPosition);
+    TETRISlogXYZ("Component Block at: ", worldPosition, 2, true);
+  }
+}
+
+function TETRISlogQuat(text, quat, dp = 2, debug = false) {
+
+  var logtext = `${text} w: ${quat.w.toFixed(dp)}, x: ${quat.x.toFixed(dp)}, y: ${quat.y.toFixed(dp)}, z: ${quat.z.toFixed(dp)}\n`
+
+  if (debug) {
+    var euler = new THREE.Euler(0,0,0)
+    euler.setFromQuaternion(quat);
+    logtext += `Equivalent Euler: x: ${euler.x.toFixed(dp)}, y: ${euler.y.toFixed(dp)}, z: ${euler.z.toFixed(dp)}\n`;
     console.log(logtext);
   }
   return (logtext);
