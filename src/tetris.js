@@ -961,6 +961,23 @@ AFRAME.registerComponent('falling', {
            distanceToFall = (GRID_UNIT * timeDelta) / this.interval;
            //TETRISlogXYZ("Object falling at position: ", this.el.object3D.position, 2, true);
            justLanded = !(this.moveRelative(0, -distanceToFall, 0));
+
+           while (distanceToFall > (GRID_UNIT / 25)) {
+             // Block fell > 4mm (default units)
+             // Since block falls at 10cm/second, this
+             // only happens if we drop below 25 frames per second.
+             // It also happens if A-Frame is paused (e.g. we enter the
+             // inspector).
+             // in this case, rather than leaving the block in the air,
+             // make a soft descent to the playing surface.
+
+             // Halve the distance to fall, and either fall or don't fall
+             // (we don't care which).
+             // We should end up within 4mm of the play surface which is a
+             // good enough outcome.
+             distanceToFall = distanceToFall / 2;
+             this.moveRelative(0, -distanceToFall, 0);
+           }
          }
        }
        else {
