@@ -9,7 +9,6 @@ when "landed" event occurs, tetris invokes the shape generator again...
 var CONTINUOUS = true;
 var GRID_UNIT = 0.1;
 
-
 const cloneArray = (items) => items.map(item => Array.isArray(item) ? cloneArray(item) : item);
 
 // Overall game controller.
@@ -278,9 +277,10 @@ AFRAME.registerComponent('shapegenerator', {
                                                  #rhand.abuttondown=drop`]},
     movecontrol:    {type: 'string', default: "trigger"},
     rotatecontrol:  {type: 'string', default: "grip"},
-    camera:         {type: 'string', default: ""},  // experimental
     speed:          {type: 'number', default: 1000},
     nextshape:      {type: 'selector'},
+    globalmixin:    {type: 'string', default: "cube"},
+    pershapemixin:  {type: 'string'},
     debug:          {type: 'boolean', default: false},
     logger1:        {type: 'string', default: "#log-panel1"},
     logger2:        {type: 'string', default: "#log-panel2"}
@@ -490,13 +490,26 @@ AFRAME.registerComponent('shapegenerator', {
     // shape configs too, maybe smaller or larger...
     for (var ii = 0; ii < this.shapeModels[modelChoice].length; ii++) {
       var blockEntity = document.createElement('a-entity');
-      blockEntity.setAttribute("mixin", "cube");
+      var mixinString = this.data.globalmixin
+
+      if (this.data.pershapemixin !== "")
+      {
+        // We have per-shape customization
+        mixinString += " " + this.data.pershapemixin + modelChoice.toString();
+      }
+      blockEntity.setAttribute("mixin", mixinString);
 
       if (proxy) {
+        // For the proxy, we override any custom colors with a semi-transparent grey.
+        // Not configurable (except by making the proxy invisible).
         blockEntity.setAttribute("material", "color:#888; transparent:true; opacity:0.5");
       }
       else {
-        blockEntity.setAttribute("material", "color: " + this.shapeColors[modelChoice]);
+        if (this.data.pershapemixin == "") {
+           // If no per-shape mixin, default behaviour is to color the blocks with
+           // standard per-shape colors.
+           blockEntity.setAttribute("material", "color: " + this.shapeColors[modelChoice]);
+        }
 
         // Next Shapes don't need shadows.
         if (!nextShape) {

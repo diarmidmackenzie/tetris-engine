@@ -265,3 +265,5 @@ Starry sky background for "Space Balls" 2D Tetris customization is based on a ph
 
 https://unsplash.com/photos/rCbdp8VCYhQ
 
+Planetary textures from Solar System Scope: https://www.solarsystemscope.com/textures/
+

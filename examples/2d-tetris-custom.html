@@ -39,18 +39,30 @@
            Note that "material" properties are not yet customizable, as the
            shapegenerator code currently overwites this with a hardcoded set of
            colors-->
-      <a-mixin id="cube" geometry="primitive: sphere;"
+      <a-mixin id="planet" geometry="primitive: sphere;"
                scale="0.06 0.06 0.06"
                shadow></a-mixin>
+
+      <a-mixin id="planet0" material="src:mercury.jpg"></a-mixin>
+      <a-mixin id="planet1" material="src:venus.jpg"></a-mixin>
+      <a-mixin id="planet2" material="src:earth.jpg"></a-mixin>
+      <a-mixin id="planet3" material="src:mars.jpg"></a-mixin>
+      <a-mixin id="planet4" material="src:jupiter.jpg"></a-mixin>
+      <a-mixin id="planet5" material="src:saturn.jpg"></a-mixin>
+      <a-mixin id="planet6" material="src:neptune.jpg"></a-mixin>
 
       <a-entity id='shape-gen' shapegenerator="shapes:EEE,EEU,EED,EUE,EDE,EUDE,EUW;
                                               keys:KeyZ=xminus,
                                                    KeyX=xplus,
                                                    Enter=zRotMinus,
                                                    ShiftRight=zRotPlus,
-                                                   Space=drop"
+                                                   Space=drop;
+                                               nextshape:#nextShapeContainer;
+                                               globalmixin:planet;
+                                               pershapemixin:planet"
                                               position = "0.0 2.3 -1"></a-entity>
-      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Backspace=start,#rhand.abuttondown=start"></a-entity>
+      <a-box id="nextShapeContainer" material="transparent:true;opacity:0.3" position="-1 2.05 -1" height="0.5" width = "0.5" depth ="0.5"></a-box>
+      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Enter=start,#rhand.abuttondown=start"></a-entity>
 
       <!-- Arena should be a plane, but we can put it on top of other shape -->
       <a-plane shadow="receive:true" material="color:0xFFF;metalness:0.6" height="0.1" width="1.0" rotation="-90 0 0" id="arena" arena="x: 10; z: 1" position = "0.05 0.8 -1" ></a-plane>
@@ -63,11 +75,13 @@
         - Some instructions...
         - ... and a beautiful starry sky.-->
       <a-box shadow="receive:true" material="color:0xFFF;metalness:0.6" height="0.8" width="1.0" depth="0.5" position = "0.05 0.4 -1" ></a-box>
-      <a-text id="scoreboard" value="Score" position="-0.35 0.55 -0.7" color="black"></a-text>
+      <a-text id="scoreboard" value="Score" position="-0.35 0.55 -0.7" color="black" width="3"></a-text>
       <a-box material="transparent:true;opacity:0.3" height="1.5" width="1.0" depth="0.5" position = "0.05 1.55 -1" ></a-box>
       <a-circle scale = "5 5 5" material="color:0xAAA;metalness:0.3" rotation="-90 0 0" position = "0 0 0" ></a-circle>
-      <a-text position="-5 2 0" rotation="0 90 0" height="0.1" color="white" value="A to Start (or restart in-game).\n Use Right Controller:\n Grip + move to move\n
-      Trigger + Rotate to rotate.\n"></a-text>
+      <a-text position="-5 2 0" rotation="0 90 0" height="0.1" color="white"
+              value="HOW TO PLAY SPACE BALLS\n\nUse Right Controller:
+                     A to Start.\nGrip + move to move\n Trigger + rotate to rotate.\nA to drop\n
+                     On Keyboard:\n Enter to Start\nZ/X to move\nRShift/Enter to rotate\nSpace to drop"></a-text>
       <a-assets>
         <img id="sky" src="night-sky.jfif">
       </a-assets>
