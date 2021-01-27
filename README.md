@@ -124,7 +124,7 @@ Details on the properties to set for the components in 3, 4 & 5 are covered belo
 A very simple component, configured with 3 properties:
 
 - generator: The element ID of the shape generator used in this game.  Default value is: #shapegenerator.
-- scoreboard: The element ID of an <a-text> element used to report the score.  This is mandatory, and the element must exist (if you don't want to show scores, just define an element and make it invisible).  Default value is "#scoreboard".
+- scoreboard: The element ID of an <a-text> element used to report the score, current level, and game duration.  This is mandatory, and the element must exist (if you don't want to show this information, just define an element and make it invisible).  Default value is "#scoreboard".
 - arena: The element ID of the arena used in the game.  Default value is: #arena.
 
 The game is started, or restarted, by generating the event "start" on the entity on which tetrisgame is configured.  This can be set in HTML using the latest key-bindings.js (see above), for example by setting this property, which sets the Backspace Key, and A button controller on the right hand, to start controls.
@@ -159,13 +159,13 @@ The properties that can be set on this component are:
 
   It is fine to set move & rotate to overlapping values.  This will result in both movement and rotation at the same time, when that overlapping control is engaged.
 
+- nextshape: (optional) the ID of an entity with a location at which the next block to fall is shown.  If this is not provided, the next block is not shown.
+
 - debug: Set "debug:true" on either to enable detailed console logging, and real-time data output to logger elements.
 
 - logger1: Must be set if debug is true.  Set to the ID of an <a-text> element to out real-time positional data (of the Tetris shape).  Default value is #log-panel1.
 
 - logger2: Must be set if debug is true.  Set to the ID of an <a-text> element to out real-time positional data (of the proxy control object - see 6dof-object-control for bakground on what this is).  Default value is #log-panel2.
-
-Note that VR 6DoF controls are not currently configurable, but when they are, the config will probably be on this component as well...
 
 The element assigned the shapegenerator component must also have the following A-Frame properties set.
 
@@ -181,7 +181,7 @@ The properties that can be set on this component are:
 
 The element assigned the shapegenerator component must also have the following A-Frame properties set.
 
-- An id.  This MUST be set to "arena".  (Sorry! - I'll fix this soon so it's configurable)
+- An id.  This must match what is configured on tertrisgame & shapegenerator.
 - A position.   This should be below the shapegenerator, with enough room for all configured shapes to spawn at the shape generator and be entirely within the x-z boundaries of the arena.  Recommendation is to set the shape dropper at the x-z center of the arena, about 1.5m to 2m (15 to 20 blocks) above.
   - However, the blocks that make up the arena should be aligned with the blocks that the shape dropper generates.
   - To ensure this, whenever the arena has an *even* dimension of blocks (and therefore no center block), the arena should be offset by half a block-width (i.e. 5cm) from the shape dropper.
@@ -244,19 +244,15 @@ In reality we're not there yet...  The code is still at a very early alpha stage
 
 Biggest limitations to be aware of:
 
-- There are no options to customize 6DoF controls.
-
 - This has only been tested on Oculus Quest 2 (and even then only tested a bit).  Performance on other VR headsets, and with other VR controllers is unknown.
 
 - Since this is at a very early stage of development, there will be bugs, and there will be interface changes.
-
-- Several basic elements of a classic Tetris game are missing: dropping blocks quickly, being able to see the next shape, and the pace of the game speeding up over time are some of the key gaps.
 
 - Customization is limited - as detailed above.
 
 - As explained above, behaviour on receipt of bad config from HTML is almost always a non-graceful failure, without clear info on the misconfiguration.
 
-- Almost zero automated testing for this repo, so significant risk of regressions as new function is developed.
+- Currently, almost zero automated testing for this repo, so significant risk of regressions as new function is developed.
 
   
 

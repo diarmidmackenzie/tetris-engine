@@ -280,6 +280,7 @@ AFRAME.registerComponent('shapegenerator', {
     rotatecontrol:  {type: 'string', default: "grip"},
     camera:         {type: 'string', default: ""},  // experimental
     speed:          {type: 'number', default: 1000},
+    nextshape:      {type: 'selector'},
     debug:          {type: 'boolean', default: false},
     logger1:        {type: 'string', default: "#log-panel1"},
     logger2:        {type: 'string', default: "#log-panel2"}
@@ -287,7 +288,7 @@ AFRAME.registerComponent('shapegenerator', {
   },
   init: function () {
     this.shapeIndex = 0;
-    this.latestShape = {};
+    this.nextShapeChoice = 0;
 
     // long list of colours to accommodate many shape configs.
     // Current max is 2D Pentris with 13 shapes.
@@ -333,8 +334,6 @@ AFRAME.registerComponent('shapegenerator', {
     }
     /* End experimental code */
 
-
-
     // clear out any previous shape models.
     this.shapeModels = [];
 
@@ -348,92 +347,94 @@ AFRAME.registerComponent('shapegenerator', {
        * But shapes might be any number of blocks (different variants)
        * and sometimes the compasss directions double back (e.g. for T)
        * We handle this case, and de-duplicate as necessary. */
-       shapeData = shapeDataFromCompassData(item);
+       shapeData = this.shapeDataFromCompassData(item);
        this.shapeModels.push(shapeData);
-
      });
 
-     function shapeDataFromCompassData(compassString) {
-
-       // build he shape starting at 0, 0, 0.
-       blockData = [0, 0, 0]
-       shapeData = [];
-
-       // Push a copy of block data into shape data.
-       shapeData.push(blockData.map((x) => x));
-       var xTotal = 0;
-       var yTotal = 0;
-       var zTotal = 0;
-
-       for (var ii = 0; ii < compassString.length; ii++) {
-
-         // N/S are z axis.
-         // E/W are x axis.
-         // U/D are y-axis
-         switch (compassString.charAt(ii)) {
-
-           case 'N':
-             blockData[2] -=1;
-             break;
-
-           case 'S':
-             blockData[2] +=1;
-             break;
-
-           case 'E':
-             blockData[0] -=1;
-             break;
-
-           case 'W':
-             blockData[0] +=1;
-             break;
-
-           case 'U':
-             blockData[1] +=1;
-             break;
-
-           case 'D':
-             blockData[1] -=1;
-             break;
-
-           default:
-           // Bad config.
-           console.log(`Unexpected character in shape data: ${compassString.charAt[ii]}`)
-         }
-
-         /* Now add this row, if it is not a duplicate... */
-         if (!shapeData.find((item) => ((item[0] == blockData[0]) &&
-                                        (item[1] == blockData[1]) &&
-                                        (item[2] == blockData[2])))) {
-
-           console.log(`Adding block data: x: ${blockData[0]}, y: ${blockData[0]}, z: ${blockData[0]}`)
-           shapeData.push(blockData.map((x) => x));
-
-           /* Keep a running total of the positions, used for centering later */
-           xTotal += blockData[0]
-           yTotal += blockData[1]
-           zTotal += blockData[2]
-         }
-       }
-
-       /* Finally, center the shape as best we can.
-       * Take the average position in each axis,
-       * round to nearest integer and shift by that. */
-       var xShift = Math.round(xTotal/shapeData.length);
-       var yShift = Math.round(yTotal/shapeData.length);
-       var zShift = Math.round(zTotal/shapeData.length);
-
-       console.log(`Recentering.  Shift by x:${xShift}, y: ${yShift}, z: ${zShift}`)
-       shapeData.forEach((item, index) => {
-
-         item[0] -= xShift;
-         item[1] -= yShift;
-         item[2] -= zShift;
-       });
-
-       return(shapeData);
-     }
+     // Now we have processed the shapes, set one up as our "Next shape".
+     this.nextShapeChoice = this.selectRandomShape();
    },
+
+  shapeDataFromCompassData: function(compassString) {
+
+    // build the shape starting at 0, 0, 0.
+    blockData = [0, 0, 0]
+    shapeData = [];
+
+    // Push a copy of block data into shape data.
+    shapeData.push(blockData.map((x) => x));
+    var xTotal = 0;
+    var yTotal = 0;
+    var zTotal = 0;
+
+    for (var ii = 0; ii < compassString.length; ii++) {
+
+      // N/S are z axis.
+      // E/W are x axis.
+      // U/D are y-axis
+      switch (compassString.charAt(ii)) {
+
+        case 'N':
+          blockData[2] -=1;
+          break;
+
+        case 'S':
+          blockData[2] +=1;
+          break;
+
+        case 'E':
+          blockData[0] -=1;
+          break;
+
+        case 'W':
+          blockData[0] +=1;
+          break;
+
+        case 'U':
+          blockData[1] +=1;
+          break;
+
+        case 'D':
+          blockData[1] -=1;
+          break;
+
+        default:
+        // Bad config.
+        console.log(`Unexpected character in shape data: ${compassString.charAt[ii]}`)
+      }
+
+      /* Now add this row, if it is not a duplicate... */
+      if (!shapeData.find((item) => ((item[0] == blockData[0]) &&
+                                     (item[1] == blockData[1]) &&
+                                     (item[2] == blockData[2])))) {
+
+        console.log(`Adding block data: x: ${blockData[0]}, y: ${blockData[0]}, z: ${blockData[0]}`)
+        shapeData.push(blockData.map((x) => x));
+
+        /* Keep a running total of the positions, used for centering later */
+        xTotal += blockData[0]
+        yTotal += blockData[1]
+        zTotal += blockData[2]
+      }
+    }
+
+    /* Finally, center the shape as best we can.
+    * Take the average position in each axis,
+    * round to nearest integer and shift by that. */
+    var xShift = Math.round(xTotal/shapeData.length);
+    var yShift = Math.round(yTotal/shapeData.length);
+    var zShift = Math.round(zTotal/shapeData.length);
+
+    console.log(`Recentering.  Shift by x:${xShift}, y: ${yShift}, z: ${zShift}`)
+    shapeData.forEach((item, index) => {
+
+      item[0] -= xShift;
+      item[1] -= yShift;
+      item[2] -= zShift;
+    });
+
+    return(shapeData);
+  },
 
   setSpeed: function(newSpeed) {
     this.speed = newSpeed;
@@ -448,97 +449,126 @@ AFRAME.registerComponent('shapegenerator', {
     }
   },
 
+  selectRandomShape: function() {
+    return(Math.floor(Math.random() * (this.shapeModels.length)));
+  },
+
+  createShapeElement: function(sceneEl,
+                               shapeId,
+                               shapeClass,
+                               modelChoice,
+                               proxy,
+                               nextShape,
+                               proxyId) {
+    var entityEl = document.createElement('a-entity');
+
+    entityEl.setAttribute("id", shapeId);
+    entityEl.setAttribute('class', shapeClass);
+
+    if (proxy) {
+      entityEl.setAttribute('sixdof-control-proxy',
+                            `controller:#rhand;target:#${shapeId};
+                            ${this.debugString};${this.logger2String}`);
+    }
+    else if (nextShape)
+    {
+      entityEl.setAttribute('position', this.data.nextshape.object3D.position);
+    }
+    else // regular shape in play area.  Spawn at the shape generator.
+    {
+      entityEl.setAttribute('position', this.el.object3D.position);
+      entityEl.setAttribute('falling', `interval:${this.speed}; arena: ${this.data.arena}; infocus: ${focus}`);
+      entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
+      entityEl.setAttribute('sixdof-object-control', `proxy:#${proxyId};movement:events;${this.debugString};${this.logger1String}`);
+    }
+
+    // Now finalize the object by attaching it to the scene.
+    sceneEl.appendChild(entityEl);
+
+    // Now create child entities, one for each cube that makes up the shape.
+    // Typically there will be 4 of these (tetris), but we support other
+    // shape configs too, maybe smaller or larger...
+    for (var ii = 0; ii < this.shapeModels[modelChoice].length; ii++) {
+      var blockEntity = document.createElement('a-entity');
+      blockEntity.setAttribute("mixin", "cube");
+
+      if (proxy) {
+        blockEntity.setAttribute("material", "color:#888; transparent:true; opacity:0.5");
+      }
+      else {
+        blockEntity.setAttribute("material", "color: " + this.shapeColors[modelChoice]);
+
+        // Next Shapes don't need shadows.
+        if (!nextShape) {
+          blockEntity.setAttribute("shadow", "cast:true");
+          // Let's try not using "snap - shouldn't be necessary as we only move in
+          // unit increments anyway.
+        }
+      }
+
+      blockEntity.setAttribute('position', `${this.shapeModels[modelChoice][ii][0] * GRID_UNIT}
+                                            ${this.shapeModels[modelChoice][ii][1] * GRID_UNIT}
+                                            ${this.shapeModels[modelChoice][ii][2] * GRID_UNIT}`)
+      entityEl.appendChild(blockEntity);
+    }
+  },
+
   generateShape: function(focus) {
 
     // Create the new shape.
-    var sceneEl = document.querySelector('a-scene');
+    const sceneEl = document.querySelector('a-scene');
 
-    var shapeId = `shape-${this.el.id}-${this.shapeIndex}`;
-    var shapeProxyId = `proxy-${this.el.id}-${this.shapeIndex}`;
+    const proxyId = `proxy-${this.el.id}-${this.shapeIndex}`;
+    const shapeId = `shape-${this.el.id}-${this.shapeIndex}`;
+    const nextShapeId = `proxy-${this.el.id}`;
 
     // Label proxies & shapes with classes unique to this shape generator.
     //  This allows us to delete all entities associated with this shape
     // generator, without affecting entities generated by other shape generators.
-    var proxyClass = "proxy" + this.el.id;
-    var shapeClass = "shape" + this.el.id;
+    const proxyClass = "proxy" + this.el.id;
+    const shapeClass = "shape" + this.el.id;
+    const nextShapeClass = "nextShape" + this.el.id;
 
-    modelChoice = Math.floor(Math.random() * (this.shapeModels.length));
+    // At this point, we are already committed to the next shape, but we need
+    // to make a random choice for the next next shape.
+    const modelChoice = this.nextShapeChoice;
+    this.nextShapeChoice = this.selectRandomShape();
 
     // Before we create the new proxy & new shape, delete the previous ones.
     // Clearing everything up here keeps things simple & ensures we only ever
     // have one shape & one proxy in play.
+    // Also clear up the previous next shape (we don't re-use it: we
+    // recreate it - maybe not optimal for performance, but keeps things simple).
     this.deleteAllObjectsWithClass(proxyClass)
     this.deleteAllObjectsWithClass(shapeClass)
+    this.deleteAllObjectsWithClass(nextShapeClass)
 
-    var entityEl = document.createElement('a-entity');
-    entityEl.setAttribute("id", shapeProxyId);
-    console.log(`Generating Shape with ID: #${shapeId}`)
-    console.log(`Controlled by Proxy with ID: #${shapeProxyId}`)
-    this.shapeIndex += 1;
+    // Now get on with the creation of the new shapes.
+    // Create the Proxy
+    this.createShapeElement(sceneEl,
+                            proxyId,
+                            proxyClass,
+                            modelChoice,
+                            proxy = true,
+                            nextShape = false);
 
-    entityEl.setAttribute('class', proxyClass);
-    entityEl.setAttribute('sixdof-control-proxy',
-                           `controller:#rhand;
-                           move:${this.data.movecontrol};
-                           rotate:${this.data.rotatecontrol};
-                           target:#${shapeId};${this.debugString};${this.logger2String}`);
-    //entityEl.setAttribute('snap', `snap: ${GRID_UNIT} ${GRID_UNIT} ${GRID_UNIT}`);
+    this.createShapeElement(sceneEl,
+                            shapeId,
+                            shapeClass,
+                            modelChoice,
+                            proxy = false,
+                            nextShape = false,
+                            proxyId);
 
-    // Now finalize the object by attaching it to the scene.
-    sceneEl.appendChild(entityEl);
-
-    // Now create child entities, one for each cube that makes up the shape.
-    // Typically there will be 4 of these (tetris), but we support other
-    // shape configs too, maybe smaller or larger...
-    for (var ii = 0; ii < this.shapeModels[modelChoice].length; ii++) {
-      var blockEntity = document.createElement('a-entity');
-      blockEntity.setAttribute("mixin", "cube");
-      blockEntity.setAttribute("material", "color:#888; transparent:true; opacity:0.5");
-      blockEntity.setAttribute('position', `${this.shapeModels[modelChoice][ii][0] * GRID_UNIT}
-                                         ${this.shapeModels[modelChoice][ii][1] * GRID_UNIT}
-                                         ${this.shapeModels[modelChoice][ii][2] * GRID_UNIT}`)
-      entityEl.appendChild(blockEntity);
-    }
-
-    // Now the shape that is controlled by this proxy.
-    var entityEl = document.createElement('a-entity');
-    entityEl.setAttribute("id", shapeId);
-    entityEl.setAttribute('position', this.el.object3D.position);
-    entityEl.setAttribute('class', shapeClass);
-    entityEl.setAttribute('falling', `interval:${this.speed}; arena: ${this.data.arena}; infocus: ${focus}`);
-    entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
-    entityEl.setAttribute('sixdof-object-control', `proxy:#${shapeProxyId};movement:events;${this.debugString};${this.logger1String}`);
-    /* This is experimental function where controls are enabled/disabled
-    * based on direction of view.
-    * it is dependent on the "attention" component.
-    * Not clear whether this is a good mechanism, and whether we should maintain
-    * it.  Proximity-based solutions are probably simpler */
-    if (this.attentionTracking) {
-      entityEl.setAttribute('attention', `target:${"#" + this.camera.id}`);
-    }
-    /* End experimental code */
-
-    // We have not used snap in a while.  Concerns about y-axis, and general not
-    // necessary, it seems.
-    //entityEl.setAttribute('snap', `snap: ${GRID_UNIT} ${GRID_UNIT} ${GRID_UNIT}`);
-
-    // Now finalize the object by attaching it to the scene.
-    sceneEl.appendChild(entityEl);
-
-    // Now create child entities, one for each cube that makes up the shape.
-    // Typically there will be 4 of these (tetris), but we support other
-    // shape configs too, maybe smaller or larger...
-    for (var ii = 0; ii < this.shapeModels[modelChoice].length; ii++) {
-      var blockEntity = document.createElement('a-entity');
-      blockEntity.setAttribute("mixin", "cube");
-      blockEntity.setAttribute("material", "color: " + this.shapeColors[modelChoice]);
-      blockEntity.setAttribute("shadow", "cast:true");
-      blockEntity.setAttribute('position', `${this.shapeModels[modelChoice][ii][0] * GRID_UNIT}
-                                         ${this.shapeModels[modelChoice][ii][1] * GRID_UNIT}
-                                         ${this.shapeModels[modelChoice][ii][2] * GRID_UNIT}`)
-      blockEntity.setAttribute('snap', `snap: ${GRID_UNIT} ${GRID_UNIT} ${GRID_UNIT}`);
-
-      entityEl.appendChild(blockEntity);
+    // Create the next shape display object if a next shape display is
+    // configured.
+    if (this.data.nextshape) {
+      this.createShapeElement(sceneEl,
+                              nextShapeId,
+                              nextShapeClass,
+                              this.nextShapeChoice,
+                              proxy = false,
+                              nextShape = true);
     }
 
     // Announce the new shape to anyone who cares, including the shapeId.
@@ -546,7 +576,6 @@ AFRAME.registerComponent('shapegenerator', {
     // responsible for generating more shapes when this one lands.
     this.el.emit('new-shape', {shapeId: "#" + shapeId});
 
-    return (entityEl);
   }
 });
 
