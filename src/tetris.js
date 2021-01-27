@@ -117,6 +117,12 @@ AFRAME.registerComponent('tetrisgame', {
       // We are now in a game.
       this.gameOver = false;
 
+      // Started event allows environment to update to reflect the fact That
+      // we are now in-game
+      // (start event won't start us if the game is not in focus, so is
+      //  not a reliable indicator that the game has started.)
+      this.el.emit("started");
+
       // Reset the score to zero.
       this.score = 0;
       this.scoreboard.setAttribute("text", "value: Score:" + this.score);
