@@ -20,7 +20,10 @@ AFRAME.registerComponent('tetrisgame', {
     scoreboard: {type: 'string', default: "#scoreboard"},
     debug:          {type: 'boolean', default: false},
     logger:        {type: 'string', default: "#log-panel1"},
-    focus:         {type: 'boolean', default: true}
+    focus:         {type: 'boolean', default: true},
+    levelduration: {type: 'number', default: 60},
+    levelspeedup: {type: 'number', default: 10},
+    initialspeed: {type: 'number', default: 1000}
   },
 
   // This caused problems (leads to shapegenerator init/update being calles with default values)
@@ -34,7 +37,15 @@ AFRAME.registerComponent('tetrisgame', {
     this.scoreboard = document.querySelector(this.data.scoreboard);
     this.score = 0;
     this.scoreboard.setAttribute("text", "value: Score:" + this.score);
+    this.lastScoreboardTime = 0;
     this.gameOver = true; // before game has started, we consider "game over".
+    this.gameStartTime = 0;
+    this.gameTimeSecs = 0;
+    this.level = 0;
+    this.changedLevelTime = 0;
+    this.levelDurationMsecs = this.data.levelduration * 1000;
+    this.levelSpeedMultiplier = (100 - this.data.levelspeedup)/100;
+    this.blockFallSpeed = this.data.initialspeed;
 
     this.focus = this.data.focus;
 
@@ -117,15 +128,24 @@ AFRAME.registerComponent('tetrisgame', {
       // We are now in a game.
       this.gameOver = false;
 
+
       // Started event allows environment to update to reflect the fact That
       // we are now in-game
       // (start event won't start us if the game is not in focus, so is
       //  not a reliable indicator that the game has started.)
       this.el.emit("started");
 
-      // Reset the score to zero.
+      // Reset the score, level etc.  Level will increment to 1 on the first
+      // tick - and that's when we'll update the scoreboard.
       this.score = 0;
-      this.scoreboard.setAttribute("text", "value: Score:" + this.score);
+      this.gameTimeSecs = 0;
+      this.level = 0;
+      this.changedLevelTime = 0;
+
+      // Reach into generator internals to update speed.
+      // Not ideal, but should work for now.
+      this.blockFallSpeed = this.data.initialspeed;
+      this._generator.setSpeed(this.blockFallSpeed)
 
       // All ready, now generate the first shape.
       // This will also delete any shape & associated proxy that was in-flight.
@@ -179,7 +199,54 @@ AFRAME.registerComponent('tetrisgame', {
     // handled using event-set, and the _target: selector on the tetrisgame
     // element.
   },
-  tick: function() {
+
+  updateScoreboard: function() {
+
+    var scoreboardText = "value:"
+    var gameTimeMins = Math.floor(this.gameTimeSecs / 60);
+    var gameTimeSecsRemainder = this.gameTimeSecs % 60
+    scoreboardText += "Time: " + gameTimeMins + ":" +
+                      gameTimeSecsRemainder.toString().padStart(2,'0') + "\n";
+    scoreboardText += "Level: " + this.level + "\n";
+    scoreboardText += "Score: " + this.score + "\n";
+
+    this.scoreboard.setAttribute("text", scoreboardText);
+  },
+
+  tick: function(time, timeDelta) {
+
+    // updates to make when in game:
+    if (!this.gameOver)
+    {
+
+      // Update the level as per config (every minute by default)
+      // Or if we are starting the game, record that time.
+      if (this.changedLevelTime == 0) {
+        // new game
+        this.changedLevelTime = time;
+        this.level++;
+        this.gameStartTime = time;
+        this.gameTimeSecs = 0;
+        this.updateScoreboard();
+      }
+      else if (time - this.changedLevelTime > this.levelDurationMsecs) {
+        // move up a level.
+        this.level++;
+        this.changedLevelTime = time;
+        this.blockFallSpeed = this.blockFallSpeed * this.levelSpeedMultiplier;
+
+        // Reach into generator internals to update speed.
+        // Not ideal, but should work for now.
+        this._generator.setSpeed(this.blockFallSpeed)
+      }
+
+      // Update the scoreboard every second.
+      if (time - this.lastScoreboardTime > 1000) {
+        this.lastScoreboardTime = time;
+        this.gameTimeSecs = Math.floor((time - this.gameStartTime) / 1000);
+        this.updateScoreboard();
+      }
+    }
 
     if (this.data.debug) {
       var logtext = `Focus: ${this.focus}\n`
@@ -190,9 +257,7 @@ AFRAME.registerComponent('tetrisgame', {
       logPanel.setAttribute('text', "value: " + logtext);
     }
   }
-
 });
-
 
 // Generate shapes.
 AFRAME.registerComponent('shapegenerator', {
@@ -214,6 +279,7 @@ AFRAME.registerComponent('shapegenerator', {
     movecontrol:    {type: 'string', default: "trigger"},
     rotatecontrol:  {type: 'string', default: "grip"},
     camera:         {type: 'string', default: ""},  // experimental
+    speed:          {type: 'number', default: 1000},
     debug:          {type: 'boolean', default: false},
     logger1:        {type: 'string', default: "#log-panel1"},
     logger2:        {type: 'string', default: "#log-panel2"}
@@ -249,6 +315,9 @@ AFRAME.registerComponent('shapegenerator', {
     this.debugString = this.data.debug ? "debug:true" : "debug: false";
     this.logger1String = this.data.debug ? `logger:${this.data.logger1}` : "";
     this.logger2String = this.data.debug ? `logger:${this.data.logger2}` : "";
+
+    // Speed config.  This changes over time...
+    this.setSpeed(this.data.speed);
 
     /* This is experimental function where controls are enabled/disabled
     * based on direction of view.
@@ -366,6 +435,10 @@ AFRAME.registerComponent('shapegenerator', {
      }
    },
 
+  setSpeed: function(newSpeed) {
+    this.speed = newSpeed;
+  },
+
   deleteAllObjectsWithClass: function(targetClass) {
 
     var elementsToDelete = document.querySelectorAll("." + targetClass);
@@ -432,7 +505,7 @@ AFRAME.registerComponent('shapegenerator', {
     entityEl.setAttribute("id", shapeId);
     entityEl.setAttribute('position', this.el.object3D.position);
     entityEl.setAttribute('class', shapeClass);
-    entityEl.setAttribute('falling', `interval:1000; arena: ${this.data.arena}; infocus: ${focus}`);
+    entityEl.setAttribute('falling', `interval:${this.speed}; arena: ${this.data.arena}; infocus: ${focus}`);
     entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
     entityEl.setAttribute('sixdof-object-control', `proxy:#${shapeProxyId};movement:events;${this.debugString};${this.logger1String}`);
     /* This is experimental function where controls are enabled/disabled
