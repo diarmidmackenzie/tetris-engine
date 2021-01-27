@@ -54,9 +54,9 @@ On keyboard, the controls are completely customizable.  The example games use:
     - 5/8 for pitch.
 - The example games also support movement in VR using WASD or cursor keys, and gaze control using the mouse.  But this is just standard A-Frame stuff, nothing to do with tetris-engine.
 
-On a VR 6DoF controller, the controls are the same for 2D and 3D games, and cannot currently be customized.
+On a VR 6DoF controller, the controls are the same for 2D and 3D games, and again customizable (see below).  The example games use:
 
-- A to start, or restart mid-game.
+- A to start.
 - Hold grip down and move to move the shape (in the x-z plane only)
 - Hold trigger down and rotate the controller to rotate the object.
 - Holding grip + trigger at the same time allows simultaneous rotation and movement.
@@ -127,7 +127,7 @@ A very simple component, configured with 3 properties:
 - scoreboard: The element ID of an <a-text> element used to report the score.  This is mandatory, and the element must exist (if you don't want to show scores, just define an element and make it invisible).  Default value is "#scoreboard".
 - arena: The element ID of the arena used in the game.  Default value is: #arena.
 
-The game is started, or restarted, by generating the event "start" on the entity on which tetrisgame is configured.  This can be set in HTML using the latest key-bindings.js (see above), for example by setting this: property, which sets the Backspace Key, and A button controller on the right hand, to start controls.
+The game is started, or restarted, by generating the event "start" on the entity on which tetrisgame is configured.  This can be set in HTML using the latest key-bindings.js (see above), for example by setting this property, which sets the Backspace Key, and A button controller on the right hand, to start controls.
 
 ```
 key-bindings="debug:true;bindings:Backspace=start,#rhand.abuttondown=start"
@@ -152,6 +152,12 @@ The properties that can be set on this component are:
   - drop: accelerate the rate of falling of this shape.
 
   If keys are not specified, they will default to the default controls for 3D tetris.  For VR-only applications, it shouldn't matter what keys are set, as the player won't be using the keyboard.
+
+- move: one of: "grip", "trigger" or"either".  Default: "grip".  Indicates which control will enable movement of the object, when using a 6doF controller.
+
+- rotate: one of: "grip", "trigger" or "either".  Default: "trigger".  Indicates which control will enable movement of the object, when using a 6doF controller.
+
+  It is fine to set move & rotate to overlapping values.  This will result in both movement and rotation at the same time, when that overlapping control is engaged.
 
 - debug: Set "debug:true" on either to enable detailed console logging, and real-time data output to logger elements.
 

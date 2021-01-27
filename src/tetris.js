@@ -210,6 +210,8 @@ AFRAME.registerComponent('shapegenerator', {
                                                  Numpad7=zRotMinus,
                                                  Numpad9=zRotPlus,
                                                  Space=drop`]},
+    movecontrol:    {type: 'string', default: "trigger"},
+    rotatecontrol:  {type: 'string', default: "grip"},
     camera:         {type: 'string', default: ""},  // experimental
     debug:          {type: 'boolean', default: false},
     logger1:        {type: 'string', default: "#log-panel1"},
@@ -401,7 +403,11 @@ AFRAME.registerComponent('shapegenerator', {
     this.shapeIndex += 1;
 
     entityEl.setAttribute('class', proxyClass);
-    entityEl.setAttribute('sixdof-control-proxy', `controller:#rhand;target:#${shapeId};${this.debugString};${this.logger2String}`);
+    entityEl.setAttribute('sixdof-control-proxy',
+                           `controller:#rhand;
+                           move:${this.data.movecontrol};
+                           rotate:${this.data.rotatecontrol};
+                           target:#${shapeId};${this.debugString};${this.logger2String}`);
     //entityEl.setAttribute('snap', `snap: ${GRID_UNIT} ${GRID_UNIT} ${GRID_UNIT}`);
 
     // Now finalize the object by attaching it to the scene.
