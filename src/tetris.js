@@ -209,7 +209,8 @@ AFRAME.registerComponent('shapegenerator', {
                                                  Numpad6=yRotMinus,
                                                  Numpad7=zRotMinus,
                                                  Numpad9=zRotPlus,
-                                                 Space=drop`]},
+                                                 Space=drop,
+                                                 #rhand.abuttondown=drop`]},
     movecontrol:    {type: 'string', default: "trigger"},
     rotatecontrol:  {type: 'string', default: "grip"},
     camera:         {type: 'string', default: ""},  // experimental

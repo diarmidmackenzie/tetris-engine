@@ -18,9 +18,9 @@
       <a-mixin id="cube" geometry="primitive: box;"
                scale="0.1 0.1 0.1"
                shadow></a-mixin>
-      <a-entity id='shape-gen' shapegenerator="shapes:,;
+      <a-entity id='shape-gen' shapegenerator="shapes:,,,,,;
                                               keys:KeyA=xminus,
-                                                   KeyS=xplus,
+                                                   KeyD=xplus,
                                                    KeyW=zminus,
                                                    KeyS=zplus,
                                                    Space=drop;
@@ -28,9 +28,9 @@
                                                    logger1:#log-panel1;
                                                    logger2:#log-panel2"
                                               position = "0.0 2.0 -1"></a-entity>
-      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="debug:true;bindings:Enter=start></a-entity>
+      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="debug:true;bindings:Enter=start"></a-entity>
 
-      <a-plane id="arena" arena="x: 2; z: 2" shadow="receive:true" height="0.1" width="1.0" rotation="-90 0 0" position = "0.05 0.5 -1" ></a-plane>
+      <a-plane id="arena" arena="x: 2; z: 2" shadow="receive:true" height="0.2" width="0.2" rotation="-90 0 0" position = "0.05 1 -1.05" color=red></a-plane>
 
       <!--Scoreboard, and some text to guide the user-->
       <a-text id="scoreboard" value="Score" position="3 1 -3" color="black"></a-text>
