@@ -121,11 +121,14 @@ Details on the properties to set for the components in 3, 4 & 5 are covered belo
 
 #### tetrisgame
 
-A very simple component, configured with 3 properties:
+A very simple component, configured with the following properties:
 
 - generator: The element ID of the shape generator used in this game.  Default value is: #shapegenerator.
 - scoreboard: The element ID of an <a-text> element used to report the score, current level, and game duration.  This is mandatory, and the element must exist (if you don't want to show this information, just define an element and make it invisible).  Default value is "#scoreboard".
 - arena: The element ID of the arena used in the game.  Default value is: #arena.
+- levelduration: How long, in seconds, before moving up to the next level (which increases block speed).  Default: 60 seconds.
+- initialspeed: How long, in msecs, it takes for a block to fall one space, at the start of the game.  Lower values indicate faster falling.  Default 1000.
+- levelspeedup: A percentage increase applied to the speed on each level.  This percentage is deducted from the time taken to fall one block, each time the level is increased.  Default 10 - which results in the speed doubling every 6-7 levels (i.e. every 6-7 minutes with the default settings).
 
 The game is started, or restarted, by generating the event "start" on the entity on which tetrisgame is configured.  This can be set in HTML using the latest key-bindings.js (see above), for example by setting this property, which sets the Backspace Key, and A button controller on the right hand, to start controls.
 
