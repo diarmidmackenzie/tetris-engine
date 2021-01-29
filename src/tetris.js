@@ -455,23 +455,26 @@ AFRAME.registerComponent('shapegenerator', {
     return(Math.floor(Math.random() * (this.shapeModels.length)));
   },
 
-  createShapeElement: function(shapeId,
+  createShapeElement: function(elementId,
                                shapeClass,
                                modelChoice,
                                proxy,
                                nextShape,
-                               proxyId,
+                               targetId,
                                inFocus) {
     var entityEl = document.createElement('a-entity');
 
-    entityEl.setAttribute("id", shapeId);
+    entityEl.setAttribute("id", elementId);
     entityEl.setAttribute('class', shapeClass);
 
     if (proxy) {
       // Disable debugging - too verbose & gets in the way of debugging problems
       // with tetris-engine...
       entityEl.setAttribute('sixdof-control-proxy',
-                            `controller:#rhand;target:#${shapeId}`);
+                            `controller:#rhand;
+                             move:${this.data.movecontrol};
+                             rotate:${this.data.rotatecontrol};
+                             target:#${targetId}`);
     }
     else if (nextShape)
     {
@@ -482,7 +485,7 @@ AFRAME.registerComponent('shapegenerator', {
       entityEl.setAttribute('position', this.positionInArenaSpace);
       entityEl.setAttribute('falling', `interval:${this.speed}; arena:#${this.data.arena.id};infocus:${inFocus}`);
       entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
-      entityEl.setAttribute('sixdof-object-control', `proxy:#${proxyId};movement:events;${this.debugString};${this.logger1String}`);
+      entityEl.setAttribute('sixdof-object-control', `proxy:#${targetId};movement:events;${this.debugString};${this.logger1String}`);
     }
 
     // Now finalize the object by attaching it as a child of the arena.
@@ -571,6 +574,7 @@ AFRAME.registerComponent('shapegenerator', {
                             modelChoice,
                             proxy = true,
                             nextShape = false,
+                            shapeId,
                             inFocus);
 
     this.createShapeElement(shapeId,
@@ -589,6 +593,7 @@ AFRAME.registerComponent('shapegenerator', {
                               this.nextShapeChoice,
                               proxy = false,
                               nextShape = true,
+                              null,
                               inFocus);
     }
 
