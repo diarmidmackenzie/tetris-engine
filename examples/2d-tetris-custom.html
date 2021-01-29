@@ -15,10 +15,10 @@
   <head>
     <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@latest/key-bindings.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.1-alpha/src/6dof-object-control.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@latest/src/keyboard-hand-controls.min.js"></script>
-    <script src="../src/tetris.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@v0.2-alpha/key-bindings.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.2-alpha/src/6dof-object-control.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.2-alpha/src/keyboard-hand-controls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/tetris-engine@v0.2-alpha/src/tetris.js"></script>
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
@@ -39,7 +39,11 @@
            Note that "material" properties are not yet customizable, as the
            shapegenerator code currently overwites this with a hardcoded set of
            colors-->
-      <a-mixin id="planet" geometry="primitive: sphere;"
+      <!-- Bug in tetris-engine v0.2 that this id has to be "cube" due to a bug
+          in "arena integration" code.  Will be fixed in next release.
+          Also we'll fix the bug where textures get rotated back to initial
+          position on block integration-->
+      <a-mixin id="cube" geometry="primitive: sphere;"
                scale="0.06 0.06 0.06"
                shadow></a-mixin>
 
@@ -58,14 +62,15 @@
                                                    ShiftRight=zRotPlus,
                                                    Space=drop;
                                                nextshape:#nextShapeContainer;
-                                               globalmixin:planet;
+                                               globalmixin:cube;
                                                pershapemixin:planet"
                                               position = "0.0 2.3 -1"></a-entity>
       <a-box id="nextShapeContainer" material="transparent:true;opacity:0.3" position="-1 2.05 -1" height="0.5" width = "0.5" depth ="0.5"></a-box>
-      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Enter=start,#rhand.abuttondown=start"></a-entity>
+      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Space=start,#rhand.abuttondown=start"></a-entity>
 
-      <!-- Arena should be a plane, but we can put it on top of other shape -->
-      <a-plane shadow="receive:true" material="color:0xFFF;metalness:0.6" height="0.1" width="1.0" rotation="-90 0 0" id="arena" arena="x: 10; z: 1" position = "0.05 0.8 -1" ></a-plane>
+      <!-- Arena does not need a plane, as the physical arena surfaces is provided
+           by the box base (below)-->
+      <a-entity id="arena" arena="x: 10; z: 1" position = "0.05 0.8 -1" ></a-entity>
 
       <!-- some custom elements that are different from the basic setup...
         - All simple A-Frame HTML.
@@ -81,7 +86,7 @@
       <a-text position="-5 2 0" rotation="0 90 0" height="0.1" color="white"
               value="HOW TO PLAY SPACE BALLS\n\nUse Right Controller:
                      A to Start.\nGrip + move to move\n Trigger + rotate to rotate.\nA to drop\n
-                     On Keyboard:\n Enter to Start\nZ/X to move\nRShift/Enter to rotate\nSpace to drop"></a-text>
+                     On Keyboard:\n Space to Start\nZ/X to move\nRShift/Enter to rotate\nSpace to drop"></a-text>
       <a-assets>
         <img id="sky" src="night-sky.jfif">
       </a-assets>

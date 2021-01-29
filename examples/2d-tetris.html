@@ -8,12 +8,10 @@
     <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@2.0.0/dist/aframe-environment-component.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@latest/key-bindings.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.1-alpha/src/6dof-object-control.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@latest/src/keyboard-hand-controls.min.js"></script>
-    <!-- since this is part of the tetris-engine repo, we include the local tetris-engine.js
-         but you could also pull this from JSDelivr CDN.  See README.-->
-    <script src="../src/tetris.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@v0.2-alpha/key-bindings.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.2-alpha/src/6dof-object-control.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.2-alpha/src/keyboard-hand-controls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/tetris-engine@v0.2-alpha/src/tetris.min.js"></script>
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
@@ -63,14 +61,16 @@
                                                    Enter=zRotMinus,
                                                    ShiftRight=zRotPlus,
                                                    Space=drop;
-                                                   debug:true;
-                                                   logger1:#log-panel1;
-                                                   logger2:#log-panel2"
-                                              position = "0.0 2.0 -1"></a-entity>
+                                              nextshape:#nextshape;
+                                              debug:true;
+                                              logger1:#log-panel1;
+                                              logger2:#log-panel2"
+                                position = "0.0 2.0 -1"></a-entity>
+      <a-entity id='nextshape' position = "1 2.0 -1"></a-entity>
       <!--There needs to be an entity with the tetrisgame component.-->
       <!--Can probably double this up with another entity like the arena,
           scoreboard or shape generator.  But this is what I've tested so far-->
-      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="debug:true;bindings:Backspace=start,#rhand.abuttondown=start"></a-entity>
+      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="debug:true;bindings:Space=start,#rhand.abuttondown=start"></a-entity>
 
       <!-- Putting the arena exactly below the dropper when the arena has
            an even number of spaces creates ambuiguous intent: not clear where
@@ -79,11 +79,18 @@
           This is exclusively done for even-width arenas. -->
       <!-- For this game we have a 10 x 1 arena.  2D tetris is just a special case
           of 3D Tetris, where one of the arena dimensions is 1. -->
-      <a-plane id="arena" arena="x: 10; z: 1" shadow="receive:true" height="0.1" width="1.0" rotation="-90 0 0" position = "0.05 0.5 -1" ></a-plane>
+      <!-- Note that the plane object is the one to rotate, *not* the arena.
+           From v0.3 of tetris-engine, the blocks will be stored in arena-space,
+           not world-space, and so the arena must not have rotation (unless you
+           want the game to play horizontally rather than vertically!)-->
+      <a-entity id="arena" arena="x: 10; z: 1" position = "0.05 0.5 -1" >
+        <a-plane shadow="receive:true" height="0.1" width="1.0" rotation="-90 0 0"></a-plane>
+      </a-entity>
+
 
       <!--Scoreboard, and some text to guide the user-->
       <a-text id="scoreboard" value="Score" position="3 1 -3" color="black"></a-text>
-      <a-text position="-6 1 -5" color="black" value="Backspace or A button to start, or restart mid-game.\nControls:Z/X to move L/R\nEnter/Shift to Rotate cw/ccw.  Space to drop.  Refresh to restart."></a-text>
+      <a-text position="-6 1 -5" color="black" value="Space or A button to start, or restart mid-game.\nControls:Z/X to move L/R\nEnter/Shift to Rotate cw/ccw.  Space to drop.  Refresh to restart."></a-text>
 
       <!--Some text panels for debug information - only necessary if you are
           running with debug=true-->
