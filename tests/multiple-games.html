@@ -43,16 +43,16 @@
                 event-set__focus="_target:#game-events;_event: focus; text.value:Focus"
                 event-set__defocus="_target:#game-events;_event: defocus; text.value:Defocus">
       </a-entity>
-
-      <a-plane id="arena"
-               arena="x: 2; z: 2"
-               height="0.2" width="0.2"
-               rotation="-90 0 0"
-               position = "-1.05 0.8 -1.05"
-               color="red"
-               event-set__arenafull="_target:#arena-events;_event: arena-full; text.value:Arena Full"
-               event-set__layersremoved="_target:#arena-events;_event: layers-removed; text.value:Layers Removed">
-      </a-plane>
+      <a-entity id="arena" arena="x: 2; z: 2"
+                event-set__arenafull="_target:#arena-events;_event: arena-full; text.value:Arena Full"
+                event-set__layersremoved="_target:#arena-events;_event: layers-removed; text.value:Layers Removed"
+                position = "-1.05 0.8 -1.05">
+        <a-plane id="arena"
+                 height="0.2" width="0.2"
+                 rotation="-90 0 0"
+                 color="red">
+        </a-plane>
+      </a-entity>
 
       <!--Scoreboard, and some text to guide the user-->
       <a-text id="scoreboard" value="Score" position="-5 1 -3" color="black"></a-text>
@@ -71,23 +71,24 @@
                                                           Space=drop;
                                                           arena:#arena2"
                                                           position="1 1.6 -1"></a-entity>
-            <a-entity id="game2" tetrisgame="focus:false;generator:#shapegenerator2;;scoreboard:#scoreboard2;focus:false"
+            <a-entity id="game2" tetrisgame="focus:false;arena:#arena2;generator:#shapegenerator2;;scoreboard:#scoreboard2;focus:false"
                       key-bindings="debug:true;bindings:Enter=start,Digit1=defocus,Digit2=focus,Digit3=focus,Digit4=defocus"
                       event-set__start="_target:#game-events2;_event: start; text.value:Start"
                       event-set__gameover="_target:#game-events2;_event: game-over; text.value:Game Over"
                       event-set__focus="_target:#game-events2;_event: focus; text.value:Focus"
                       event-set__defocus="_target:#game-events2;_event: defocus; text.value:Defocus">
             </a-entity>
-
-            <a-plane id="arena2"
+            <a-entity id="arena2"
                      arena="x: 2; z: 2"
-                     height="0.2" width="0.2"
-                     rotation="-90 0 0"
                      position = "1.05 0.8 -1.05"
-                     color="red"
                      event-set__arenafull="_target:#arena-events2;_event: arena-full; text.value:Arena Full"
                      event-set__layersremoved="_target:#arena-events2;_event: layers-removed; text.value:Layers Removed">
-            </a-plane>
+              <a-plane height="0.2" width="0.2"
+                       rotation="-90 0 0"
+
+                       color="red">
+              </a-plane>
+            </a-entity>
 
             <!--Scoreboard, and some text to guide the user-->
             <a-text id="scoreboard2" value="Score" position="3 1 -3" color="black"></a-text>

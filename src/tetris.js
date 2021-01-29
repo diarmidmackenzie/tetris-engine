@@ -1,4 +1,4 @@
-/*
+  /*
 tetrisgame is overall game controller.
 
 shapegenerator issues "shape-generated" event.
@@ -261,7 +261,7 @@ AFRAME.registerComponent('tetrisgame', {
 // Generate shapes.
 AFRAME.registerComponent('shapegenerator', {
   schema: {
-    arena: {type: 'string', default: '#arena'},
+    arena:           {type: 'selector', default: '#arena'},
     shapes:          {type: 'array', default: ["EEE","EEN","ENE","ENSE","ENW","ENSD","EDN"]},
     keys:            {type: 'string', default: [`KeyY=zminus,
                                                  KeyH=zplus,
@@ -289,6 +289,8 @@ AFRAME.registerComponent('shapegenerator', {
   init: function () {
     this.shapeIndex = 0;
     this.nextShapeChoice = 0;
+    this.shapeGenWorldPosition = new THREE.Vector3;
+    this.positionInArenaSpace = new THREE.Vector3(0, 0, 0);
 
     // long list of colours to accommodate many shape configs.
     // Current max is 2D Pentris with 13 shapes.
@@ -453,37 +455,38 @@ AFRAME.registerComponent('shapegenerator', {
     return(Math.floor(Math.random() * (this.shapeModels.length)));
   },
 
-  createShapeElement: function(sceneEl,
-                               shapeId,
+  createShapeElement: function(shapeId,
                                shapeClass,
                                modelChoice,
                                proxy,
                                nextShape,
-                               proxyId) {
+                               proxyId,
+                               inFocus) {
     var entityEl = document.createElement('a-entity');
 
     entityEl.setAttribute("id", shapeId);
     entityEl.setAttribute('class', shapeClass);
 
     if (proxy) {
+      // Disable debugging - too verbose & gets in the way of debugging problems
+      // with tetris-engine...
       entityEl.setAttribute('sixdof-control-proxy',
-                            `controller:#rhand;target:#${shapeId};
-                            ${this.debugString};${this.logger2String}`);
+                            `controller:#rhand;target:#${shapeId}`);
     }
     else if (nextShape)
     {
       entityEl.setAttribute('position', this.data.nextshape.object3D.position);
     }
-    else // regular shape in play area.  Spawn at the shape generator.
+    else // regular shape in play area.  Spawn at the shape generator (its parent).
     {
-      entityEl.setAttribute('position', this.el.object3D.position);
-      entityEl.setAttribute('falling', `interval:${this.speed}; arena: ${this.data.arena}; infocus: ${focus}`);
+      entityEl.setAttribute('position', this.positionInArenaSpace);
+      entityEl.setAttribute('falling', `interval:${this.speed}; arena:#${this.data.arena.id};infocus:${inFocus}`);
       entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
       entityEl.setAttribute('sixdof-object-control', `proxy:#${proxyId};movement:events;${this.debugString};${this.logger1String}`);
     }
 
-    // Now finalize the object by attaching it to the scene.
-    sceneEl.appendChild(entityEl);
+    // Now finalize the object by attaching it as a child of the arena.
+    this.data.arena.appendChild(entityEl);
 
     // Now create child entities, one for each cube that makes up the shape.
     // Typically there will be 4 of these (tetris), but we support other
@@ -526,9 +529,14 @@ AFRAME.registerComponent('shapegenerator', {
     }
   },
 
-  generateShape: function(focus) {
+  generateShape: function(inFocus) {
 
-    // Create the new shape.
+    // Make sure we have an accurate view of the relative positions of the
+    // Shape Generator & Arena (may not be set up correctly in initialization
+    // depending on order).
+    this.el.object3D.getWorldPosition(this.positionInArenaSpace);
+    this.data.arena.object3D.worldToLocal(this.positionInArenaSpace);
+
     const sceneEl = document.querySelector('a-scene');
 
     const proxyId = `proxy-${this.el.id}-${this.shapeIndex}`;
@@ -558,30 +566,30 @@ AFRAME.registerComponent('shapegenerator', {
 
     // Now get on with the creation of the new shapes.
     // Create the Proxy
-    this.createShapeElement(sceneEl,
-                            proxyId,
+    this.createShapeElement(proxyId,
                             proxyClass,
                             modelChoice,
                             proxy = true,
-                            nextShape = false);
+                            nextShape = false,
+                            inFocus);
 
-    this.createShapeElement(sceneEl,
-                            shapeId,
+    this.createShapeElement(shapeId,
                             shapeClass,
                             modelChoice,
                             proxy = false,
                             nextShape = false,
-                            proxyId);
+                            proxyId,
+                            inFocus);
 
     // Create the next shape display object if a next shape display is
     // configured.
     if (this.data.nextshape) {
-      this.createShapeElement(sceneEl,
-                              nextShapeId,
+      this.createShapeElement(nextShapeId,
                               nextShapeClass,
                               this.nextShapeChoice,
                               proxy = false,
-                              nextShape = true);
+                              nextShape = true,
+                              inFocus);
     }
 
     // Announce the new shape to anyone who cares, including the shapeId.
@@ -598,17 +606,28 @@ AFRAME.registerComponent('shapegenerator', {
 // Intervals is number of msecs between fall steps.
 // Only a top-level shape should be registered as "falling"
 // This handles parent + child components.
+/* Some notes on the lifecycle of a shape...
+ * It is created by the Shape Generator, but as a child of the Arena.
+ * This means that its position is recorded relative to the Arena, which
+ * makes collision calculations simple.
+ * When the shape lands, it is destroyed, and it's consituent blocks are
+ * recreated, also as children of the Arena, with the same space considerations.
+ * We avoid any comparisons in world space,.  This means that
+ * the entire game engine could be re-oriented to any orientation (including
+ * sideways or upside-down, and should continue to work). */
+
 AFRAME.registerComponent('falling', {
   schema: {
      interval: {type: 'number'},
-     arena: {type: 'string'},
+     arena: {type: 'selector'},
      shapeindex: {type: 'string'},
      infocus: {type: 'boolean', default: true}
    },
 
    init: function () {
      this.landed = false;
-     this.arena = document.querySelector(this.data.arena).components.arena;
+     this.arenaEl = this.data.arena;
+     this._arena = this.arenaEl.components.arena;
      this.interval = this.data.interval;
      this.startHeight = this.el.object3D.position.y;
      this.infocus = this.data.infocus;
@@ -900,6 +919,7 @@ AFRAME.registerComponent('falling', {
 
      var canMove = true;
      var worldPosition = new THREE.Vector3();
+     var arenaPosition = new THREE.Vector3();
 
      // Loop through each sub-component in the shape.  If any one can't move, the
      // whole thing can't fall.
@@ -907,24 +927,27 @@ AFRAME.registerComponent('falling', {
 
      for (ii = 0; ii < childrenArray.length; ii++) {
 
-       // Need to get absolute position of each component block.
+       // Block positions are relative to parent shape.
+       // We need them in arena space.
        childrenArray[ii].object3D.getWorldPosition(worldPosition);
+       arenaPosition.copy(worldPosition)
+       this.arenaEl.object3D.worldToLocal(arenaPosition)
 
        // This gives us the center of the shape.  Which is exactly what we want
        // to use to check position - safest co-ordinates to map to the cells matrix
        // maintained to track arena state.
 
        // Now add the proposed Move Vector
-       worldPosition.x += moveVector.x;
-       worldPosition.y += moveVector.y;
-       worldPosition.z += moveVector.z;
+       arenaPosition.x += moveVector.x;
+       arenaPosition.y += moveVector.y;
+       arenaPosition.z += moveVector.z;
 
-       if (!this.arena.isOpenSpace(worldPosition)) {
+       if (!this._arena.isOpenSpace(arenaPosition)) {
          // we found a component that can't move.
          // So the whole object can't move.
          canMove = false;
 
-         TETRISlogXYZ("Block at this position can't move", worldPosition, 2, true);
+         TETRISlogXYZ("Block at this position can't move", arenaPosition, 2, true);
          TETRISlogXYZ("Parent shape position is", this.el.object3D.position, 2, true);
          break;
        }
@@ -1001,7 +1024,7 @@ AFRAME.registerComponent('falling', {
          if (this.el.object3D.position.y >= this.startHeight)
          {
            console.log("Game Over");
-           this.arena.arenaFull();
+           this._arena.arenaFull();
          }
 
          // Processing for mainline case: piece landed.
@@ -1016,14 +1039,13 @@ AFRAME.registerComponent('falling', {
          //this.arena.checkConsistency();
 
          // Integrate shape into arena surface.
-         this.integrateShapeToArena(this.arena, this.el)
+         this.integrateShapeToArena(this._arena, this.el)
          // Note that arena may be inconsistent now, while new block creation
          // is underway (we delete the block objects that made up the shape,
          // and create new instances to represent the blocks as they appear
          // in the arena.
 
-         // Destroying of the shape & proxy happens when we spawn a new shape
-         // in.
+         // Destroying of the shape & proxy happens when we spawn a new shape.
          // If the shape gets left around a bit longer (e.g. Game Over with no
          // new shape spawing), it's no big deal, as it is identical in
          // appearance to the blocks that replace it.  There will just be 2
@@ -1099,13 +1121,18 @@ AFRAME.registerComponent('arena', {
     // For X & Z such precision is not required, as blocks only move in unit
     // increments.
     this.cornerOffset = new THREE.Vector3();
-    this.cornerOffset.x = -(this.width / 2) * GRID_UNIT
-    this.cornerOffset.z = -(this.depth / 2) * GRID_UNIT
-    this.cornerOffset.y = (GRID_UNIT / 2);
 
     // Cells is a full 3d map of the whole play area, used
     // to decide where blocks can go, and when layers are completed.
     this.cellsArray = [];
+  },
+
+  update: function () {
+
+    this.cornerOffset.x = -(this.width / 2) * GRID_UNIT
+    this.cornerOffset.z = -(this.depth / 2) * GRID_UNIT
+    this.cornerOffset.y = (GRID_UNIT / 2);
+
   },
 
   clearArena: function() {
@@ -1138,6 +1165,7 @@ AFRAME.registerComponent('arena', {
 
   // Debug function to spot any discrepancies between the displayed model
   // and the cellsArray model.
+
   checkConsistency: function() {
 
     if (this.cellsArray.length > 0) {
@@ -1152,18 +1180,17 @@ AFRAME.registerComponent('arena', {
 
     for (blockIx = 0; blockIx < blockList.length; blockIx++) {
 
-      var worldPosition = new THREE.Vector3();
+      var arenaPosition = new THREE.Vector3();
       // Query will include the falling block.
       // Should Ignore these Not yet written code to do this..
 
-
       // since these blocks are not children, position should be fine...
-      worldPosition = blockList[blockIx].object3D.position;
+      arenaPosition = blockList[blockIx].object3D.position;
 
-      if (worldPosition.z !== 0) {
-        // Sometimes wold position is zero.  Not sure why, but pretty confident
+      if (arenaPosition.z !== 0) {
+        // Sometimes world position is zero.  Not sure why, but pretty confident
         // these are false positives.  So ignore them.
-        const cellIndex = this.worldPositionToCellIndices(worldPosition, true);
+        const cellIndex = this.arenaPositionToCellIndices(arenaPosition, true);
 
         if (this.cellsArray[cellIndex.y][cellIndex.x][cellIndex.z] !== 1) {
           console.log("Found object not tracked in cellsArray");
@@ -1189,9 +1216,10 @@ AFRAME.registerComponent('arena', {
       }
     }
   },
-  // Utility function to map a world position to an index into the
+  // Utility function to map a position in Arena space to an index into the
   // arena cells array.
-  worldPositionToCellIndices: function(objectPosition, debug) {
+  // Object position should be passed in already in Arena space.
+  arenaPositionToCellIndices: function(objectPosition, debug) {
     // Basic logic is:
     // - get corner position of arena
     // - subtract this from object position.
@@ -1200,18 +1228,15 @@ AFRAME.registerComponent('arena', {
     // Vector arithmetic has not been working, so we (tediously) do
     // separate calculations for X, y & Z.
 
-    const arenaPosition = this.el.getAttribute('position');
-
     // Extract x, y & z diffs, converting by grid units, and converting to integers.
     // Here we need to factor in difference between the corner and the center of the arena
-    const xIndex = Math.floor((objectPosition.x - (arenaPosition.x + this.cornerOffset.x)) / GRID_UNIT);
-    const yIndex = Math.floor((objectPosition.y - (arenaPosition.y + this.cornerOffset.y)) / GRID_UNIT);
-    const zIndex = Math.floor((objectPosition.z - (arenaPosition.z + this.cornerOffset.z)) / GRID_UNIT);
+    const xIndex = Math.floor((objectPosition.x - (this.cornerOffset.x)) / GRID_UNIT);
+    const yIndex = Math.floor((objectPosition.y - (this.cornerOffset.y)) / GRID_UNIT);
+    const zIndex = Math.floor((objectPosition.z - (this.cornerOffset.z)) / GRID_UNIT);
 
     if (debug) {
       console.log(`Object: x: ${objectPosition.x}, y: ${objectPosition.y}, z: ${objectPosition.z}`)
-      console.log(`Arena: x: ${arenaPosition.x}, y:${arenaPosition.y}, z:${arenaPosition.z}`)
-      console.log(`Arena corner offset: x:${this.cornerOffset.x}, y:${this.cornerOffset.y}, z:${this.cornerOffset.z}`)
+      console.log(`Arena corner: x:${this.cornerOffset.x}, y:${this.cornerOffset.y}, z:${this.cornerOffset.z}`)
       console.log(`Indices: x:${xIndex}, y:${yIndex}, z:${zIndex}`)
     }
 
@@ -1221,10 +1246,13 @@ AFRAME.registerComponent('arena', {
   // Is this position (a) in the arena, and (b) not occupied already?
   // Recommend that this function is called with co-ordinates in the *center* of a cell
   // To avoid edge cases when dealing with edge co-ordinates.
+  // The position provided should already be converted into the Arena's
+  // frame of reference.
   isOpenSpace: function (objectPosition) {
     var isOpenSpace;
     // Find the cell that maps to this position.
-    const cellIndex = this.worldPositionToCellIndices(objectPosition);
+    const cellIndex = this.arenaPositionToCellIndices(objectPosition);
+    logXYZ("Cell Indices:", cellIndex, 2, true);
 
     if ((cellIndex.x >= 0 && cellIndex.x < this.width) &&
         (cellIndex.z >= 0 && cellIndex.z < this.depth) &&
@@ -1256,11 +1284,15 @@ AFRAME.registerComponent('arena', {
   // Integrate a block of a shape object that has fallen into the arena floor.
   integrateBlock: function (blockElement) {
 
-    // Get the absolute position of the block.
+    // Block is a child of the shape, and therefore position is in shape space.
+    // Translate it into arena space via world space.
     var worldPosition = new THREE.Vector3();
+    var arenaPosition = new THREE.Vector3();
     blockElement.object3D.getWorldPosition(worldPosition);
+    arenaPosition.copy(worldPosition)
+    this.el.object3D.worldToLocal(arenaPosition)
 
-    var cellIndex = this.worldPositionToCellIndices(worldPosition, true);
+    var cellIndex = this.arenaPositionToCellIndices(arenaPosition, true);
 
     // Now we populate cellsArray with an indication that this cell is occupied.
 
@@ -1298,17 +1330,17 @@ AFRAME.registerComponent('arena', {
     // - Setting a counter on the Arena: blocks_to_integrate
     // - Setting the "integration-tracker" component on the new objects
 
-    var sceneEl = document.querySelector('a-scene');
     var entityEl = document.createElement('a-entity');
+
 
     entityEl.setAttribute("mixin", "cube");
     entityEl.setAttribute("material", blockElement.getAttribute("material"));
-    entityEl.setAttribute('position', `${worldPosition.x}
-                                       ${worldPosition.y}
-                                       ${worldPosition.z}`)
+    entityEl.setAttribute('position', `${arenaPosition.x}
+                                       ${arenaPosition.y}
+                                       ${arenaPosition.z}`)
     entityEl.setAttribute('class', 'block' + this.el.id);
     entityEl.setAttribute('integration-tracker', `arena: #${this.el.id}`);
-    sceneEl.appendChild(entityEl);
+    this.el.appendChild(entityEl);
     this.blocksPendingIntegrationCount++;
 
     // And destroy the old element.
@@ -1389,13 +1421,14 @@ AFRAME.registerComponent('arena', {
       // just read (and update) position directly,
       // no need to access "world position".
 
-      var position = blockList[blockIx].getAttribute('position');
+      var position = blockList[blockIx].object3D.position;
+      // Now this is a child of arena, so posiiton is relative to arena.
 
-      const cellIndex = this.worldPositionToCellIndices(position, true);
+      const cellIndex = this.arenaPositionToCellIndices(position, true);
 
       if (cellIndex.y == layer) {
         // In this layer.  Destroy the block.
-        sceneEl.removeChild(blockList[blockIx]);
+        this.el.removeChild(blockList[blockIx]);
       }
       else if (cellIndex.y > layer) {
         // layer above - move down.
@@ -1403,7 +1436,6 @@ AFRAME.registerComponent('arena', {
       }
     }
   }
-
 });
 
 AFRAME.registerComponent('integration-tracker', {

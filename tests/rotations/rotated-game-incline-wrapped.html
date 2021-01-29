@@ -1,0 +1,60 @@
+<!-- A basic version of 1-block 3D Tetris for testing-->
+<!-- Game rotated to a 45 degree incline in world space on z-axis.-->
+
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@latest/key-bindings.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.1-alpha/src/6dof-object-control.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@latest/src/keyboard-hand-controls.min.js"></script>
+    <script src="../../src/tetris.js"></script>
+  </head>
+  <body>
+    <a-scene renderer="colorManagement:true">
+      <a-entity id="rig">
+        <!-- camera positioned & rotated to view the game head-on-->
+        <a-entity camera position="0 1.6 0">
+        </a-entity>
+      </a-entity>
+      <a-mixin id="cube" geometry="primitive: box;"
+               scale="0.1 0.1 0.1"
+               shadow></a-mixin>
+
+      <a-entity position="1 0.5 -1" rotation="0 0 45">
+        <a-entity id='shape-gen' shapegenerator="shapes:,,,,,;
+                                                keys:KeyA=xminus,
+                                                     KeyD=xplus,
+                                                     KeyW=zminus,
+                                                     KeyS=zplus,
+                                                     Space=drop;
+                                                     debug:true;
+                                                     logger1:#log-panel1;
+                                                     logger2:#log-panel2"
+                                                position = "0.0 2.0 0"></a-entity>
+        <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="debug:true;bindings:Enter=start"></a-entity>
+       <!-- the subtlety here is getting the arena center correct.
+       <!-- Even dimensions on both x & z means we need to offset by 0.5, 0.5.
+       <!-- But those offsets are applied in world-space, with the arena rotated by 45 degrees.
+       <!-- So that actually translates to a ~0.071 offset x, and a zero offset z.-->
+       <a-entity id="arena" arena="x: 2; z: 2" position = "0.05 1 -0.05">
+           <a-plane shadow="receive:true" height="0.2" width="0.2" rotation="-90 0" color=red></a-plane>
+       </a-entity>
+     </a-entity>
+
+     <!-- An alternative would be to wrap the shape dropper and the arena up together in a single
+     <!-- parent entity, and use that to manage the 45 degree rotation.
+     <!-- See rotated-game-45-wrapped.html-->
+
+      <!--Scoreboard, and some text to guide the user-->
+      <a-text id="scoreboard" value="Score" position="3 1 -3" color="black"></a-text>
+      <a-text position="-6 1 -5" color="black" value="Enter to start\nControls:WASD to move block.  Space to drop."></a-text>
+
+      <!--Some text panels for debug information - only necessary if you are
+          running with debug=true-->
+      <a-text id="log-panel1" value="Panel 1" position="3 3 -5" color="black"></a-text>
+      <a-text id="log-panel2" value="Panel 2" position="-1 3 -5" color="black"></a-text>
+      <a-text id="log-panel3" value="Panel 3" position="-5 3 -5" color="black"></a-text>
+
+    </a-scene>
+  </body>
+</html>
