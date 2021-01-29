@@ -478,7 +478,8 @@ AFRAME.registerComponent('shapegenerator', {
     }
     else if (nextShape)
     {
-      entityEl.setAttribute('position', this.data.nextshape.object3D.position);
+      this.data.nextshape.object3D.getWorldPosition(entityEl.object3D.position);
+      this.data.arena.object3D.worldToLocal(entityEl.object3D.position);
     }
     else // regular shape in play area.  Spawn at the shape generator (its parent).
     {
