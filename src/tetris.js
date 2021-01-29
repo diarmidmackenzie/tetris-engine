@@ -1119,12 +1119,9 @@ AFRAME.registerComponent('arena', {
 
     // Falling blocks are tracked by the center of the block.
     // The cornerOffset is the offset between the arena "position"
-    // (which is the center of the base plane)
     // and the point we want to deduct to get "cell position".
-    // For Y, we must be precise, as blocks fall continuously.  The
-    // correct point is half a grid unti above the plan.
-    // For X & Z such precision is not required, as blocks only move in unit
-    // increments.
+    //
+    // See update() function for details on how this is calculated.
     this.cornerOffset = new THREE.Vector3();
 
     // Cells is a full 3d map of the whole play area, used
@@ -1134,8 +1131,31 @@ AFRAME.registerComponent('arena', {
 
   update: function () {
 
-    this.cornerOffset.x = -(this.width / 2) * GRID_UNIT
-    this.cornerOffset.z = -(this.depth / 2) * GRID_UNIT
+    // Now that we track blocks in Arena space, it's essential that the
+    // shape generator is aligned with a GRID_UNIT in Arena space.
+    // This means that the non-centered offset for the cases where the
+    // Arena dimensions are even must be allowed for in code, it can't be
+    // be compensated for solely in HTML.
+    // (though it will also need to be compensated for in HTML, as the
+    // entity that shows the arena to the user (e.g. a plane) will need
+    // to be offset by half a block from the arena position, to correctly
+    // match with where the arena is.
+
+    // Correct calculation established from examples:
+    // width = 9 or 10.  Shape generator at cell 5.  Offset to 0 = 5
+    // if cell 5 center is at 0, then cell 0 center is at -5.
+    // anything from -5.5 to -4.5 should give cell 0.
+    // So offset for cell index is -4.5 (we round down).
+    //
+    // width = 11 or 12.  Shape generator at 6.  Offset to 0 = 6
+    // if cell 6 center is at 0, then cell 0 center is at -6.
+    // anything from -6.5 to -5.5 should give cell 0.
+    // So offset for cell index is -5.5 (we round down).
+    //
+    // So the correct calculation is 0.5 - floor((width + 1)/2)
+    // Whole thing needs to then be scaled by GRID_UNIT.
+    this.cornerOffset.x = (0.5 - Math.floor((this.width + 1) / 2)) * GRID_UNIT
+    this.cornerOffset.z = (0.5 - Math.floor((this.depth + 1) / 2)) * GRID_UNIT
     this.cornerOffset.y = (GRID_UNIT / 2);
 
   },

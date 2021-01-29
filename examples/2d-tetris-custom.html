@@ -18,7 +18,7 @@
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@v0.2-alpha/key-bindings.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.2-alpha/src/6dof-object-control.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.2-alpha/src/keyboard-hand-controls.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/tetris-engine@v0.2-alpha/src/tetris.js"></script>
+    <script src="../src/tetris.js"></script>
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
@@ -73,7 +73,7 @@
 
       <!-- Arena does not need a plane, as the physical arena surfaces is provided
            by the box base (below)-->
-      <a-entity id="arena" arena="x: 10; z: 1" position = "0.05 0.8 -1" ></a-entity>
+      <a-entity id="arena" arena="x: 10; z: 1" position = "0.00 0.8 -1" ></a-entity>
 
       <!-- some custom elements that are different from the basic setup...
         - All simple A-Frame HTML.
@@ -82,6 +82,9 @@
         - There's a large circular space around the player.
         - Some instructions...
         - ... and a beautiful starry sky.-->
+      <!--Note the offset of 0.05 between these elements and the arena.
+          This reflects the fact that the arena has an even dimension and shapes
+          are spawned at block 5 of 10, which is not the true center-->
       <a-box shadow="receive:true" material="color:0xFFF;metalness:0.6" height="0.8" width="1.0" depth="0.5" position = "0.05 0.4 -1" ></a-box>
       <a-text id="scoreboard" value="Score" position="-0.35 0.55 -0.7" color="black" width="3"></a-text>
       <a-box material="transparent:true;opacity:0.3" height="1.5" width="1.0" depth="0.5" position = "0.05 1.55 -1" ></a-box>
