@@ -1312,10 +1312,8 @@ AFRAME.registerComponent('arena', {
 
     // Block is a child of the shape, and therefore position is in shape space.
     // Translate it into arena space via world space.
-    var worldPosition = new THREE.Vector3();
     var arenaPosition = new THREE.Vector3();
-    blockElement.object3D.getWorldPosition(worldPosition);
-    arenaPosition.copy(worldPosition)
+    blockElement.object3D.getWorldPosition(arenaPosition);
     this.el.object3D.worldToLocal(arenaPosition)
 
     var cellIndex = this.arenaPositionToCellIndices(arenaPosition, true);
@@ -1359,13 +1357,18 @@ AFRAME.registerComponent('arena', {
     var entityEl = document.createElement('a-entity');
 
 
-    entityEl.setAttribute("mixin", "cube");
+    entityEl.setAttribute("mixin", blockElement.getAttribute("mixin"));
     entityEl.setAttribute("material", blockElement.getAttribute("material"));
-    entityEl.setAttribute('position', `${arenaPosition.x}
-                                       ${arenaPosition.y}
-                                       ${arenaPosition.z}`)
     entityEl.setAttribute('class', 'block' + this.el.id);
     entityEl.setAttribute('integration-tracker', `arena: #${this.el.id}`);
+    entityEl.object3D.position.copy(arenaPosition);
+
+    // For textured blocks we also need to match the rotation.
+    // Since child blocks are never rotated with respect to their parent shape
+    // we can simply take the parent rotation of the shape (in arena space)
+    // and apply this to each block.
+    entityEl.object3D.rotation.copy(blockElement.object3D.parent.rotation);
+
     this.el.appendChild(entityEl);
     this.blocksPendingIntegrationCount++;
 
