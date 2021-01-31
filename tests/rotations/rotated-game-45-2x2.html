@@ -36,8 +36,10 @@
      <!-- Even dimensions on both x & z means we need to offset by 0.5, 0.5.
      <!-- But those offsets are applied in world-space, with the arena rotated by 45 degrees.
      <!-- So that actually translates to a ~0.071 offset x, and a zero offset z.-->
-     <a-entity id="arena" arena="x: 2; z: 2" position = "-0.071 1 -1" color=red rotation="0 45 0" >
-         <a-plane shadow="receive:true" height="0.2" width="0.2" rotation="-90 0" color=red></a-plane>
+     <!-- In practice this is a bad approach: better to wrap the arena and
+          shape generator as children of a parent element, and rotate that. -->
+     <a-entity id="arena" arena="x: 2; z: 2" position = "0 1 -1" color=red rotation="0 45 0" >
+         <a-plane shadow="receive:true" height="0.2" width="0.2" rotation="-90 0" position = "-0.071 0 0" color=red></a-plane>
      </a-entity>
 
      <!-- An alternative would be to wrap the shape dropper and the arena up together in a single

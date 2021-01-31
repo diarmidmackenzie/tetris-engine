@@ -31,10 +31,13 @@
                                                       that game has focus on it."></a-text>
 
       <!-- Game 1-->
+      <!-- we compensate for a minor out-by-one error exposed by the fact
+           that shape dimensions exactly match arena dimensions,
+           by setting the shape generator 0.1 back from the arena-->
       <a-entity id='shapegenerator' shapegenerator="shapes:N;keys:KeyZ=xminus,
                                                     KeyX=xplus,
                                                     Space=drop"
-                                                    position = "-1 1.6 -1">
+                                                    position = "-1 1.6 -0.9">
       </a-entity>
       <a-entity id="game" tetrisgame="focus:true"
                 key-bindings="debug:true;bindings:Enter=start,Digit1=focus,Digit2=defocus,Digit3=focus,Digit4=defocus"
@@ -46,10 +49,11 @@
       <a-entity id="arena" arena="x: 2; z: 2"
                 event-set__arenafull="_target:#arena-events;_event: arena-full; text.value:Arena Full"
                 event-set__layersremoved="_target:#arena-events;_event: layers-removed; text.value:Layers Removed"
-                position = "-1.05 0.8 -1.05">
+                position = "-1 0.8 -1">
         <a-plane id="arena"
                  height="0.2" width="0.2"
                  rotation="-90 0 0"
+                 position = "0.05 0 0.05"
                  color="red">
         </a-plane>
       </a-entity>
@@ -64,13 +68,15 @@
       <a-text id="game-events" value="No Events" position="-7 3 -5" color="black"></a-text>
 
       <!-- Game 2-->
-
+            <!-- we compensate for a minor out-by-one error exposed by the fact
+                 that shape dimensions exactly match arena dimensions,
+                 by setting the shape generator 0.1 back from the arena-->
             <a-entity id='shapegenerator2' shapegenerator="shapes:N;
                                                           keys:KeyZ=xminus,
                                                           KeyX=xplus,
                                                           Space=drop;
                                                           arena:#arena2"
-                                                          position="1 1.6 -1"></a-entity>
+                                                          position="1 1.6 -0.9"></a-entity>
             <a-entity id="game2" tetrisgame="focus:false;arena:#arena2;generator:#shapegenerator2;;scoreboard:#scoreboard2;focus:false"
                       key-bindings="debug:true;bindings:Enter=start,Digit1=defocus,Digit2=focus,Digit3=focus,Digit4=defocus"
                       event-set__start="_target:#game-events2;_event: start; text.value:Start"
@@ -80,12 +86,12 @@
             </a-entity>
             <a-entity id="arena2"
                      arena="x: 2; z: 2"
-                     position = "1.05 0.8 -1.05"
+                     position = "1 0.8 -1"
                      event-set__arenafull="_target:#arena-events2;_event: arena-full; text.value:Arena Full"
                      event-set__layersremoved="_target:#arena-events2;_event: layers-removed; text.value:Layers Removed">
               <a-plane height="0.2" width="0.2"
                        rotation="-90 0 0"
-
+                       position="0.05 0 0.05"
                        color="red">
               </a-plane>
             </a-entity>
