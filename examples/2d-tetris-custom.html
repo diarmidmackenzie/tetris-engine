@@ -18,7 +18,7 @@
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@v0.2-alpha/key-bindings.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.2-alpha/src/keyboard-hand-controls.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.2.1-alpha/src/6dof-object-control.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/tetris-engine@v0.2.1-alpha/src/tetris.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/tetris-engine@v0.2.2-alpha/src/tetris.min.js"></script>
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
@@ -44,17 +44,27 @@
           in "arena integration" code.  Will be fixed in next release.
           Also we'll fix the bug where textures get rotated back to initial
           position on block integration-->
-      <a-mixin id="cube" geometry="primitive: sphere;"
+      <a-assets>
+        <img id="sky" src="night-sky.jfif">
+        <img id="mercury" src="mercury.jpg">
+        <img id="venus" src="venus.jpg">
+        <img id="earth" src="earth.jpg">
+        <img id="mars" src="mars.jpg">
+        <img id="jupiter" src="jupiter.jpg">
+        <img id="saturn" src="saturn.jpg">
+        <img id="neptune" src="neptune.jpg">
+      </a-assets>
+      <a-mixin id="planet" geometry="primitive: sphere;"
                scale="0.06 0.06 0.06"
                shadow></a-mixin>
 
-      <a-mixin id="planet0" material="src:mercury.jpg"></a-mixin>
-      <a-mixin id="planet1" material="src:venus.jpg"></a-mixin>
-      <a-mixin id="planet2" material="src:earth.jpg"></a-mixin>
-      <a-mixin id="planet3" material="src:mars.jpg"></a-mixin>
-      <a-mixin id="planet4" material="src:jupiter.jpg"></a-mixin>
-      <a-mixin id="planet5" material="src:saturn.jpg"></a-mixin>
-      <a-mixin id="planet6" material="src:neptune.jpg"></a-mixin>
+      <a-mixin id="planet0" material="src:#mercury"></a-mixin>
+      <a-mixin id="planet1" material="src:#venus"></a-mixin>
+      <a-mixin id="planet2" material="src:#earth"></a-mixin>
+      <a-mixin id="planet3" material="src:#mars"></a-mixin>
+      <a-mixin id="planet4" material="src:#jupiter"></a-mixin>
+      <a-mixin id="planet5" material="src:#saturn"></a-mixin>
+      <a-mixin id="planet6" material="src:#neptune"></a-mixin>
 
       <a-entity id='shape-gen' shapegenerator="shapes:EEE,EEU,EED,EUE,EDE,EUDE,EUW;
                                               keys:KeyZ=xminus,
@@ -66,7 +76,7 @@
                                                movecontrol: grip;
                                                rotatecontrol: either;
                                                nextshape:#nextShapeContainer;
-                                               globalmixin:cube;
+                                               globalmixin:planet;
                                                pershapemixin:planet"
                                               position = "0.0 2.3 -1"></a-entity>
       <a-box id="nextShapeContainer" material="transparent:true;opacity:0.3" position="-1 2.05 -1" height="0.5" width = "0.5" depth ="0.5"></a-box>
@@ -94,9 +104,7 @@
               value="HOW TO PLAY SPACE BALLS\n\nUse Right Controller:
                      A to Start.\nGrip + move or rotate to move pr rotate\n Trigger + rotate to rotate without movement.\nA to drop\n
                      On Keyboard:\n Space to Start\nZ/X to move\nRShift/Enter to rotate\nSpace to drop"></a-text>
-      <a-assets>
-        <img id="sky" src="night-sky.jfif">
-      </a-assets>
+
       <a-sky src=#sky></a-sky>
     </a-scene>
   </body>
