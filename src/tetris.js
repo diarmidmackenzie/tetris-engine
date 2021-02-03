@@ -291,9 +291,12 @@ AFRAME.registerComponent('shapegenerator', {
     this.nextShapeChoice = 0;
     this.shapeGenWorldPosition = new THREE.Vector3;
     this.positionInArenaSpace = new THREE.Vector3(0, 0, 0);
+    this.offsetVector = new THREE.Vector3(0.5 * GRID_UNIT,
+                                          0.5 * GRID_UNIT,
+                                          0.5 * GRID_UNIT);
 
     // long list of colours to accommodate many shape configs.
-    // Current max is 2D Pentris with 13 shapes.
+    // Current max is 2D Pentris with 18 shapes.
     this.shapeColors = [
       "#FF0",
       "#00F",
@@ -308,8 +311,13 @@ AFRAME.registerComponent('shapegenerator', {
       "#8F0",
       "#0F8",
       "#80F",
-      "#08F"
-    ]
+      "#08F",
+      "#F88",
+      "#8F8",
+      "#88F",
+      "#8FF",
+      "#FF8",
+      "#F8F"]
   },
 
   update: function () {
@@ -368,6 +376,12 @@ AFRAME.registerComponent('shapegenerator', {
     var xTotal = 0;
     var yTotal = 0;
     var zTotal = 0;
+    var xMin = 0;
+    var xMax = 0;
+    var yMin = 0;
+    var yMax = 0;
+    var zMin = 0;
+    var zMax = 0;
 
     for (var ii = 0; ii < compassString.length; ii++) {
 
@@ -417,15 +431,44 @@ AFRAME.registerComponent('shapegenerator', {
         xTotal += blockData[0]
         yTotal += blockData[1]
         zTotal += blockData[2]
+
+        /* And of maxima / minima */
+        xMin = (blockData[0] < xMin) ? blockData[0] : xMin
+        xMax = (blockData[0] > xMax) ? blockData[0] : xMax
+        yMin = (blockData[1] < yMin) ? blockData[1] : yMin
+        yMax = (blockData[1] > yMax) ? blockData[1] : yMax
+        zMin = (blockData[2] < zMin) ? blockData[2] : zMin
+        zMax = (blockData[2] > zMax) ? blockData[2] : zMax
       }
     }
 
     /* Finally, center the shape as best we can.
     * Take the average position in each axis,
     * round to nearest integer and shift by that. */
-    var xShift = Math.round(xTotal/shapeData.length);
-    var yShift = Math.round(yTotal/shapeData.length);
-    var zShift = Math.round(zTotal/shapeData.length);
+
+    /* A shape can have a center of rotation that is in the center of a block
+     * or at the corner of a block.
+     * But to ensure rotations result in a correctly aligned blocks,
+     * all of X, Y & Z must be either centre or edge.  No mixing.
+     * We let the longest dimension determine whether we are on the center or
+     * edge: odd => center, event => edge.  Then the others fall into line. */
+    longestDimension = Math.max(xMax - xMin, yMax - yMin, zMax - zMin) + 1;
+
+    if (longestDimension % 2 == 1)
+    {
+      // Odd longest dimension.  Pick the block that's approximately the
+      // center.
+      var xShift = Math.round(xTotal/shapeData.length);
+      var yShift = Math.round(yTotal/shapeData.length);
+      var zShift = Math.round(zTotal/shapeData.length);
+    }
+    else {
+      // even longest dimension.  Pick a block corner as shape center, and
+      // offset the shape by a half block.
+      var xShift = Math.floor(xTotal/shapeData.length) + 0.5;
+      var yShift = Math.floor(yTotal/shapeData.length) + 0.5;
+      var zShift = Math.floor(zTotal/shapeData.length) + 0.5;
+    }
 
     console.log(`Recentering.  Shift by x:${xShift}, y: ${yShift}, z: ${zShift}`)
     shapeData.forEach((item, index) => {
@@ -433,6 +476,7 @@ AFRAME.registerComponent('shapegenerator', {
       item[0] -= xShift;
       item[1] -= yShift;
       item[2] -= zShift;
+
     });
 
     return(shapeData);
@@ -483,10 +527,20 @@ AFRAME.registerComponent('shapegenerator', {
     }
     else // regular shape in play area.  Spawn at the shape generator (its parent).
     {
-      entityEl.setAttribute('position', this.positionInArenaSpace);
+      entityEl.object3D.position.copy(this.positionInArenaSpace);
       entityEl.setAttribute('falling', `interval:${this.speed}; arena:#${this.data.arena.id};infocus:${inFocus}`);
       entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
       entityEl.setAttribute('sixdof-object-control', `proxy:#${targetId};movement:events;${this.debugString};${this.logger1String}`);
+    }
+
+    // Some models neex to be offset by (0.5, 0.5, 0.5) relative to the
+    // shape generator, because their center of rotation is a block corner
+    // rather than a block center.
+    // These can be spotted since they have non-integer position data.
+
+    if (!Number.isInteger(this.shapeModels[modelChoice][0][0]))
+    {
+      entityEl.object3D.position.add(this.offsetVector);
     }
 
     // Now finalize the object by attaching it as a child of the arena.
@@ -658,6 +712,8 @@ AFRAME.registerComponent('falling', {
        focus: this.onFocus.bind(this),
        defocus: this.onDefocus.bind(this)
      };
+
+     this.setSaveRotationVectors();
    },
 
    play: function () {
@@ -673,6 +729,56 @@ AFRAME.registerComponent('falling', {
 
    pause: function () {
      this.removeEventListeners();
+   },
+
+   setSaveRotationVectors: function() {
+
+    this.saveRotationVector1 = new THREE.Vector3(0, 0, 0);
+    this.saveRotationVector2 = new THREE.Vector3(0, 0, 0);
+
+     // Loop through each sub-component in the shape to figure out the
+     // longest dimension.
+     var childrenArray = Array.from(this.el.childNodes);
+     var xMin = 1;
+     var xMax = -1;
+     var yMin = 1;
+     var yMax = -1;
+     var zMin = 1;
+     var zMax = -1;
+
+     for (ii = 0; ii < childrenArray.length; ii++) {
+       // Determine range of x, y & z in this shape
+       // (in default orientation).
+       var xPos = childrenArray[ii].object3D.position.x;
+       var yPos = childrenArray[ii].object3D.position.y;
+       var zPos = childrenArray[ii].object3D.position.z;
+
+       xMin = (xPos < xMin) ? xPos : xMin
+       xMax = (xPos > xMax) ? xPos : xMax
+       yMin = (yPos < yMin) ? yPos : yMin
+       yMax = (yPos > yMax) ? yPos : yMax
+       zMin = (zPos < zMin) ? zPos : zMin
+       zMax = (zPos > zMax) ? zPos : zMax
+     }
+
+     if ((xMax - xMin > yMax - yMin) &&
+         (xMax - xMin > zMax - zMin)) {
+        // x is longest dimension
+        this.saveRotationVector1.set(GRID_UNIT, 0, 0)
+        this.saveRotationVector2.set(-GRID_UNIT, 0, 0)
+      }
+      else if ((yMax - yMin > xMax - xMin) &&
+               (yMax - yMin > zMax - zMin)) {
+        // y is the longest dimension
+        this.saveRotationVector1.set(0, GRID_UNIT, 0)
+        this.saveRotationVector2.set(0, -GRID_UNIT, 0)
+      }
+      else if ((zMax - zMin > xMax - xMin) &&
+               (zMax - zMin > yMax - yMin)) {
+        // z is the longest dimension
+        this.saveRotationVector1.set(0, 0, GRID_UNIT)
+        this.saveRotationVector2.set(0, 0, -GRID_UNIT)
+      }
    },
 
    onFocus: function () {
@@ -838,11 +944,30 @@ AFRAME.registerComponent('falling', {
        rotated = true;
      }
      else {
-       // Undo the rotation.
-       TETRISlogXYZ("Undoing rotation at position: ", this.el.object3D.position, 2, true);
-       this.el.object3D.quaternion.copy(oldQuaternion);
-       rotated = false;
-       TETRISlogAllBlockPositions(this.el);
+       // There is a case we want to allow for, where we enable a small translation
+       // to enable the rotation.
+       // But only when a move of +/-1 along the shape's longest dimension
+       // would be enough to enable the rotation.
+       // Vectors to check are the base "save rotation vectors" set up when
+       // we initialize the shape, with the rotation quaternion applied to them.
+       var srv1 = this.saveRotationVector1.clone();
+       srv1.applyQuaternion(quaternion);
+       var srv2 = this.saveRotationVector2.clone();
+       srv2.applyQuaternion(quaternion);
+
+       if (this.canShapeMoveHere(this.el, srv1)) {
+         this.el.object3D.position.add(srv1);
+       }
+       else if (this.canShapeMoveHere(this.el, srv2)) {
+         this.el.object3D.position.add(srv2);
+       }
+       else {
+         // Undo the rotation.
+         TETRISlogXYZ("Undoing rotation at position: ", this.el.object3D.position, 2, true);
+         this.el.object3D.quaternion.copy(oldQuaternion);
+         rotated = false;
+         TETRISlogAllBlockPositions(this.el);
+       }
      }
      this.testingNewPosition = false;
 
