@@ -291,9 +291,6 @@ AFRAME.registerComponent('shapegenerator', {
     this.nextShapeChoice = 0;
     this.shapeGenWorldPosition = new THREE.Vector3;
     this.positionInArenaSpace = new THREE.Vector3(0, 0, 0);
-    this.offsetVector = new THREE.Vector3(0.5 * GRID_UNIT,
-                                          0.5 * GRID_UNIT,
-                                          0.5 * GRID_UNIT);
 
     // long list of colours to accommodate many shape configs.
     // Current max is 2D Pentris with 18 shapes.
@@ -376,12 +373,6 @@ AFRAME.registerComponent('shapegenerator', {
     var xTotal = 0;
     var yTotal = 0;
     var zTotal = 0;
-    var xMin = 0;
-    var xMax = 0;
-    var yMin = 0;
-    var yMax = 0;
-    var zMin = 0;
-    var zMax = 0;
 
     for (var ii = 0; ii < compassString.length; ii++) {
 
@@ -424,7 +415,7 @@ AFRAME.registerComponent('shapegenerator', {
                                      (item[1] == blockData[1]) &&
                                      (item[2] == blockData[2])))) {
 
-        console.log(`Adding block data: x: ${blockData[0]}, y: ${blockData[0]}, z: ${blockData[0]}`)
+        console.log(`Adding block data: x: ${blockData[0]}, y: ${blockData[1]}, z: ${blockData[2]}`)
         shapeData.push(blockData.map((x) => x));
 
         /* Keep a running total of the positions, used for centering later */
@@ -432,43 +423,23 @@ AFRAME.registerComponent('shapegenerator', {
         yTotal += blockData[1]
         zTotal += blockData[2]
 
-        /* And of maxima / minima */
-        xMin = (blockData[0] < xMin) ? blockData[0] : xMin
-        xMax = (blockData[0] > xMax) ? blockData[0] : xMax
-        yMin = (blockData[1] < yMin) ? blockData[1] : yMin
-        yMax = (blockData[1] > yMax) ? blockData[1] : yMax
-        zMin = (blockData[2] < zMin) ? blockData[2] : zMin
-        zMax = (blockData[2] > zMax) ? blockData[2] : zMax
       }
     }
 
     /* Finally, center the shape as best we can.
-    * Take the average position in each axis,
-    * round to nearest integer and shift by that. */
+       to get optimal rotation behaviour, we align to the nearest
+       half-block (which can lead to non-aligned rotations), and then snap
+       back to the grid after rotation. */
 
-    /* A shape can have a center of rotation that is in the center of a block
-     * or at the corner of a block.
-     * But to ensure rotations result in a correctly aligned blocks,
-     * all of X, Y & Z must be either centre or edge.  No mixing.
-     * We let the longest dimension determine whether we are on the center or
-     * edge: odd => center, event => edge.  Then the others fall into line. */
-    longestDimension = Math.max(xMax - xMin, yMax - yMin, zMax - zMin) + 1;
-
-    if (longestDimension % 2 == 1)
-    {
-      // Odd longest dimension.  Pick the block that's approximately the
-      // center.
-      var xShift = Math.round(xTotal/shapeData.length);
-      var yShift = Math.round(yTotal/shapeData.length);
-      var zShift = Math.round(zTotal/shapeData.length);
-    }
-    else {
-      // even longest dimension.  Pick a block corner as shape center, and
-      // offset the shape by a half block.
-      var xShift = Math.floor(xTotal/shapeData.length) + 0.5;
-      var yShift = Math.floor(yTotal/shapeData.length) + 0.5;
-      var zShift = Math.floor(zTotal/shapeData.length) + 0.5;
-    }
+    var xShift = Math.round(xTotal/shapeData.length * 2)/2;
+    var yShift = Math.round(yTotal/shapeData.length * 2)/2;
+    var zShift = Math.round(zTotal/shapeData.length * 2)/2;
+    /* We had also experimented with completely natural centers of rotation
+    No string argument against this, but it does seem to increase the potential
+    range of scenarios to consider...
+    var xShift = xTotal/shapeData.length;
+    var yShift = yTotal/shapeData.length;
+    var zShift = zTotal/shapeData.length;*/
 
     console.log(`Recentering.  Shift by x:${xShift}, y: ${yShift}, z: ${zShift}`)
     shapeData.forEach((item, index) => {
@@ -533,15 +504,9 @@ AFRAME.registerComponent('shapegenerator', {
       entityEl.setAttribute('sixdof-object-control', `proxy:#${targetId};movement:events;${this.debugString};${this.logger1String}`);
     }
 
-    // Some models neex to be offset by (0.5, 0.5, 0.5) relative to the
-    // shape generator, because their center of rotation is a block corner
-    // rather than a block center.
-    // These can be spotted since they have non-integer position data.
-
-    if (!Number.isInteger(this.shapeModels[modelChoice][0][0]))
-    {
-      entityEl.object3D.position.add(this.offsetVector);
-    }
+    /* The shape center may not be grid-aligned, so snap the shape to a grid
+       position in the X/Z axes. */
+    /* The shape will snap to this grid at initialization. */
 
     // Now finalize the object by attaching it as a child of the arena.
     this.data.arena.appendChild(entityEl);
@@ -713,7 +678,72 @@ AFRAME.registerComponent('falling', {
        defocus: this.onDefocus.bind(this)
      };
 
+     // Save off a couple of vectors for the shape that we use to be more
+     // generous about allowing rotations along the longest axis when close
+     // to an edge.
      this.setSaveRotationVectors();
+
+     // Now snap the shape to the grid.
+     this.snapToGridXZ();
+   },
+
+   snapToGridXZ: function() {
+
+     /* The requirement is that the child blocks (in Arena position) are aligned
+        with the arena grid.
+        Aligning one block is sufficient as they'll all have the same misalignment
+        We apply the re-alignment at the parent shape, not the block. */
+
+     // Add a micro adjustment > than any FP maths inaccuracies,
+     // to take away any ambiguities that might arise from block positions
+     // that are right on the boundary.
+     // When these happen they can result in unpredictable behaviour.
+     this.el.object3D.position.x += GRID_UNIT/100;
+     this.el.object3D.position.z += GRID_UNIT/100;
+
+     // Get arena position of the first child block.
+     var arenaPosition = new THREE.Vector3();
+     const firstChild  = Array.from(this.el.childNodes)[0];
+     firstChild.object3D.getWorldPosition(arenaPosition);
+     this.arenaEl.object3D.worldToLocal(arenaPosition)
+     console.log("Raw Shape X:" + this.el.object3D.position.x)
+     console.log("Raw Shape Z:" + this.el.object3D.position.z)
+
+     console.log("Raw Block X:" + arenaPosition.x)
+     console.log("Raw Block Z:" + arenaPosition.z)
+
+     // Find x & z offsets from grid.
+
+     const offsetX = arenaPosition.x - (Math.round(arenaPosition.x / GRID_UNIT) * GRID_UNIT)
+     const offsetZ = arenaPosition.z - (Math.round(arenaPosition.z / GRID_UNIT) * GRID_UNIT)
+
+     console.log("Snap offset X:" + offsetX)
+     console.log("Snap offset Z:" + offsetZ)
+
+     // Apply these to the shape.
+     this.el.object3D.position.x -= offsetX;
+     this.el.object3D.position.z -= offsetZ;
+
+     console.log("Adjusted Shape X:" + this.el.object3D.position.x)
+     console.log("Adjusted Shape Z:" + this.el.object3D.position.z)
+
+     // Check for position that is very close to a boundary.
+     // This will be vulnerable to jumping between spaces due to small FP math deviations.
+     // These should never happen because of the GRID_UNIT/100 adjustment we
+     // make on shape creation, but leave these checks in just in case.
+
+     if (Math.round(arenaPosition.x / GRID_UNIT) !== Math.round((arenaPosition.x + 0.0001) / GRID_UNIT)) {
+       console.warn("WARNING: X offset close to boundary" + this.el.id + " - " + arenaPosition.x)
+     }
+     if (Math.round(arenaPosition.x / GRID_UNIT) !== Math.round((arenaPosition.x - 0.0001) / GRID_UNIT)) {
+       console.warn("WARNING: X offset close to boundary" + this.el.id + " - " + arenaPosition.x)
+     }
+     if (Math.round(arenaPosition.z / GRID_UNIT) !== Math.round((arenaPosition.z + 0.0001) / GRID_UNIT)) {
+       console.warn("WARNING: Z offset close to boundary" + this.el.id + " - " + arenaPosition.z)
+     }
+     if (Math.round(arenaPosition.z / GRID_UNIT) !== Math.round((arenaPosition.z - 0.0001) / GRID_UNIT)) {
+       console.warn("WARNING: Z offset close to boundary" + this.el.id + " - " + arenaPosition.z)
+     }
    },
 
    play: function () {
@@ -918,9 +948,11 @@ AFRAME.registerComponent('falling', {
 
      TETRISlogQuat("Trying to rotate shape to:", quaternion, 1, true);
 
-     // Before we rotate, save off the old quaternion.
+     // Before we rotate, save off the old quaternion & position.
      var oldQuaternion = new THREE.Quaternion();
      oldQuaternion.copy(this.el.object3D.quaternion);
+     var oldPosition = new THREE.Vector3();
+     oldPosition.copy(this.el.object3D.position);
 
      // Apply the new (absolute) rotation.
      // Copy, not multiply, as this is an absolute rotation,
@@ -931,6 +963,8 @@ AFRAME.registerComponent('falling', {
      TETRISlogAllBlockPositions(this.el);
      this.testingNewPosition = true;
      this.el.object3D.quaternion.copy(quaternion);
+     // Rotation may have misaligned blocks from grid, so snap back.
+     this.snapToGridXZ();
 
      console.log("post-rotation");
      TETRISlogAllBlockPositions(this.el);
@@ -965,6 +999,8 @@ AFRAME.registerComponent('falling', {
          // Undo the rotation.
          TETRISlogXYZ("Undoing rotation at position: ", this.el.object3D.position, 2, true);
          this.el.object3D.quaternion.copy(oldQuaternion);
+         this.el.object3D.position.copy(oldPosition);
+         this.snapToGridXZ();
          rotated = false;
          TETRISlogAllBlockPositions(this.el);
        }
@@ -1096,7 +1132,7 @@ AFRAME.registerComponent('falling', {
 
      // We are assuming tick won't be called while we are
      // testing out a new position.
-     console.assert(!this.testingNewPosition);
+     console.log(!this.testingNewPosition);
 
      // Only blocks that haven't landed fall.
      if (!this.landed) {
@@ -1442,6 +1478,23 @@ AFRAME.registerComponent('arena', {
     this.el.object3D.worldToLocal(arenaPosition)
 
     var cellIndex = this.arenaPositionToCellIndices(arenaPosition, true);
+
+    // We have seen bugs where cellIndex is an illegal value.
+    // Shouldn't happen as we should check before allowing the block to move
+    // but if it does happen, better to handle gracefully than to crash.
+    if ((cellIndex.x < 0) || (cellIndex.x >= this.width) ||
+        (cellIndex.z < 0) || (cellIndex.z >= this.depth)) {
+      // Illegal x or z value.
+      console.error("ERROR: Illegal X or Z Value for IntegrateBlock.");
+      console.error(`Object in Arena: x: ${arenaPosition.x}, y: ${arenaPosition.y}, z: ${arenaPosition.z}`)
+      console.error(`Arena corner: x:${this.cornerOffset.x}, y:${this.cornerOffset.y}, z:${this.cornerOffset.z}`)
+      console.error(`Indices: x:${cellIndex.x}, y:${cellIndex.y}, z:${cellIndex.z}`)
+      console.log("Block destroyed without integration to arena.");
+
+      // Destory the old block, but don't create a new one.
+      blockElement.parentNode.removeChild(blockElement);
+      return;
+    }
 
     // Now we populate cellsArray with an indication that this cell is occupied.
 
