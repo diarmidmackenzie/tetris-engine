@@ -501,7 +501,7 @@ AFRAME.registerComponent('shapegenerator', {
       entityEl.object3D.position.copy(this.positionInArenaSpace);
       entityEl.setAttribute('falling', `interval:${this.speed}; arena:#${this.data.arena.id};infocus:${inFocus}`);
       entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
-      entityEl.setAttribute('sixdof-object-control', `proxy:#${targetId};movement:events;${this.debugString};${this.logger1String}`);
+      entityEl.setAttribute('sixdof-object-control', `proxy:#${targetId};movement:events;posgrid:relative;${this.debugString};${this.logger1String}`);
     }
 
     /* The shape center may not be grid-aligned, so snap the shape to a grid
@@ -1435,7 +1435,7 @@ AFRAME.registerComponent('arena', {
     var isOpenSpace;
     // Find the cell that maps to this position.
     const cellIndex = this.arenaPositionToCellIndices(objectPosition);
-    logXYZ("Cell Indices:", cellIndex, 2, true);
+    TETRISlogXYZ("Cell Indices:", cellIndex, 2, true);
 
     if ((cellIndex.x >= 0 && cellIndex.x < this.width) &&
         (cellIndex.z >= 0 && cellIndex.z < this.depth) &&
