@@ -683,6 +683,17 @@ AFRAME.registerComponent('falling', {
      // to an edge.
      this.setSaveRotationVectors();
 
+     // Add a micro adjustment > than any FP maths inaccuracies,
+     // to take away any ambiguities that might arise from block positions
+     // that are right on the boundary.
+     // When these happen they can result in unpredictable behaviour.
+     // This addresses the fact that there is a natural bias towards the top
+     // left of the board (x = 0, z = 0) for even-shaped arenas,
+     // and minor errors in FP arithmetic can lead to shapes spawning out of
+     // position (e.g. 4-bar spawning outside the 4x4 arena)
+     this.el.object3D.position.x += GRID_UNIT/100;
+     this.el.object3D.position.z += GRID_UNIT/100;
+
      // Now snap the shape to the grid.
      this.snapToGridXZ();
    },
@@ -888,6 +899,16 @@ AFRAME.registerComponent('falling', {
      //TETRISlogXYZ("Testing movement to position: ", this.el.object3D.position, 2, true);
      this.testingNewPosition = true;
      this.el.setAttribute('position', newPosition)
+
+     // Don't assume the new position is on-grid.
+     // Carious possible centers of rotation for shapes can lead to shapes ending
+     // up off-grid, even if they are only moved in whole unit increments.
+     // This can happen if they are rotated while moving.
+     // (not possible with key controls, but possible with 6DoF controls).
+     // The 6doF controller doesn't have enough knowledge of the shape grid to
+     // consistently get this right, so we need to get it right here.
+     this.snapToGridXZ();
+
      //TETRISlogXYZ("Trying to move shape to:", newPosition, 2, true);
      //TETRISlogAllBlockPositions(this.el);
 
@@ -1128,7 +1149,7 @@ AFRAME.registerComponent('falling', {
 
      // We are assuming tick won't be called while we are
      // testing out a new position.
-     console.log(!this.testingNewPosition);
+     //console.log(!this.testingNewPosition);
 
      // Only blocks that haven't landed fall.
      if (!this.landed) {
