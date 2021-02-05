@@ -694,13 +694,6 @@ AFRAME.registerComponent('falling', {
         Aligning one block is sufficient as they'll all have the same misalignment
         We apply the re-alignment at the parent shape, not the block. */
 
-     // Add a micro adjustment > than any FP maths inaccuracies,
-     // to take away any ambiguities that might arise from block positions
-     // that are right on the boundary.
-     // When these happen they can result in unpredictable behaviour.
-     this.el.object3D.position.x += GRID_UNIT/100;
-     this.el.object3D.position.z += GRID_UNIT/100;
-
      // Get arena position of the first child block.
      var arenaPosition = new THREE.Vector3();
      const firstChild  = Array.from(this.el.childNodes)[0];
@@ -728,10 +721,13 @@ AFRAME.registerComponent('falling', {
      console.log("Adjusted Shape Z:" + this.el.object3D.position.z)
 
      // Check for position that is very close to a boundary.
-     // This will be vulnerable to jumping between spaces due to small FP math deviations.
-     // These should never happen because of the GRID_UNIT/100 adjustment we
-     // make on shape creation, but leave these checks in just in case.
-
+     // I'm concerned about these, as possible cause of bugs where
+     // blank spaces get misidentified as being "filled" and vice versa.
+     // Unfortunately not clear what to do about these issues...
+     // Putting a small adjustment in prior to snapping led to a "drift" issue
+     // where rotating a block many times led to it drifting to the right.
+     // Latest testing is not showing up any actual issues, so we'll leave
+     // the warnings in, but not worry for now.
      if (Math.round(arenaPosition.x / GRID_UNIT) !== Math.round((arenaPosition.x + 0.0001) / GRID_UNIT)) {
        console.warn("WARNING: X offset close to boundary" + this.el.id + " - " + arenaPosition.x)
      }
