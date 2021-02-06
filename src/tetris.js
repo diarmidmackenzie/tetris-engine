@@ -545,9 +545,9 @@ AFRAME.registerComponent('shapegenerator', {
         }
       }
 
-      blockEntity.setAttribute('position', `${this.shapeModels[modelChoice][ii][0] * GRID_UNIT}
-                                            ${this.shapeModels[modelChoice][ii][1] * GRID_UNIT}
-                                            ${this.shapeModels[modelChoice][ii][2] * GRID_UNIT}`)
+      blockEntity.object3D.position.set(this.shapeModels[modelChoice][ii][0] * GRID_UNIT,
+                                        this.shapeModels[modelChoice][ii][1] * GRID_UNIT,
+                                        this.shapeModels[modelChoice][ii][2] * GRID_UNIT);
       entityEl.appendChild(blockEntity);
     }
   },
@@ -708,48 +708,50 @@ AFRAME.registerComponent('falling', {
      // Get arena position of the first child block.
      var arenaPosition = new THREE.Vector3();
      const firstChild  = Array.from(this.el.childNodes)[0];
-     firstChild.object3D.getWorldPosition(arenaPosition);
-     this.arenaEl.object3D.worldToLocal(arenaPosition)
-     console.log("Raw Shape X:" + this.el.object3D.position.x)
-     console.log("Raw Shape Z:" + this.el.object3D.position.z)
+     if (firstChild) {
+       firstChild.object3D.getWorldPosition(arenaPosition);
+       this.arenaEl.object3D.worldToLocal(arenaPosition)
+       console.log("Raw Shape X:" + this.el.object3D.position.x)
+       console.log("Raw Shape Z:" + this.el.object3D.position.z)
 
-     console.log("Raw Block X:" + arenaPosition.x)
-     console.log("Raw Block Z:" + arenaPosition.z)
+       console.log("Raw Block X:" + arenaPosition.x)
+       console.log("Raw Block Z:" + arenaPosition.z)
 
-     // Find x & z offsets from grid.
+       // Find x & z offsets from grid.
 
-     const offsetX = arenaPosition.x - (Math.round(arenaPosition.x / GRID_UNIT) * GRID_UNIT)
-     const offsetZ = arenaPosition.z - (Math.round(arenaPosition.z / GRID_UNIT) * GRID_UNIT)
+       const offsetX = arenaPosition.x - (Math.round(arenaPosition.x / GRID_UNIT) * GRID_UNIT)
+       const offsetZ = arenaPosition.z - (Math.round(arenaPosition.z / GRID_UNIT) * GRID_UNIT)
 
-     console.log("Snap offset X:" + offsetX)
-     console.log("Snap offset Z:" + offsetZ)
+       console.log("Snap offset X:" + offsetX)
+       console.log("Snap offset Z:" + offsetZ)
 
-     // Apply these to the shape.
-     this.el.object3D.position.x -= offsetX;
-     this.el.object3D.position.z -= offsetZ;
+       // Apply these to the shape.
+       this.el.object3D.position.x -= offsetX;
+       this.el.object3D.position.z -= offsetZ;
 
-     console.log("Adjusted Shape X:" + this.el.object3D.position.x)
-     console.log("Adjusted Shape Z:" + this.el.object3D.position.z)
+       console.log("Adjusted Shape X:" + this.el.object3D.position.x)
+       console.log("Adjusted Shape Z:" + this.el.object3D.position.z)
 
-     // Check for position that is very close to a boundary.
-     // I'm concerned about these, as possible cause of bugs where
-     // blank spaces get misidentified as being "filled" and vice versa.
-     // Unfortunately not clear what to do about these issues...
-     // Putting a small adjustment in prior to snapping led to a "drift" issue
-     // where rotating a block many times led to it drifting to the right.
-     // Latest testing is not showing up any actual issues, so we'll leave
-     // the warnings in, but not worry for now.
-     if (Math.round(arenaPosition.x / GRID_UNIT) !== Math.round((arenaPosition.x + 0.0001) / GRID_UNIT)) {
-       console.warn("WARNING: X offset close to boundary" + this.el.id + " - " + arenaPosition.x)
-     }
-     if (Math.round(arenaPosition.x / GRID_UNIT) !== Math.round((arenaPosition.x - 0.0001) / GRID_UNIT)) {
-       console.warn("WARNING: X offset close to boundary" + this.el.id + " - " + arenaPosition.x)
-     }
-     if (Math.round(arenaPosition.z / GRID_UNIT) !== Math.round((arenaPosition.z + 0.0001) / GRID_UNIT)) {
-       console.warn("WARNING: Z offset close to boundary" + this.el.id + " - " + arenaPosition.z)
-     }
-     if (Math.round(arenaPosition.z / GRID_UNIT) !== Math.round((arenaPosition.z - 0.0001) / GRID_UNIT)) {
-       console.warn("WARNING: Z offset close to boundary" + this.el.id + " - " + arenaPosition.z)
+       // Check for position that is very close to a boundary.
+       // I'm concerned about these, as possible cause of bugs where
+       // blank spaces get misidentified as being "filled" and vice versa.
+       // Unfortunately not clear what to do about these issues...
+       // Putting a small adjustment in prior to snapping led to a "drift" issue
+       // where rotating a block many times led to it drifting to the right.
+       // Latest testing is not showing up any actual issues, so we'll leave
+       // the warnings in, but not worry for now.
+       if (Math.round(arenaPosition.x / GRID_UNIT) !== Math.round((arenaPosition.x + 0.0001) / GRID_UNIT)) {
+         console.warn("WARNING: X offset close to boundary" + this.el.id + " - " + arenaPosition.x)
+       }
+       if (Math.round(arenaPosition.x / GRID_UNIT) !== Math.round((arenaPosition.x - 0.0001) / GRID_UNIT)) {
+         console.warn("WARNING: X offset close to boundary" + this.el.id + " - " + arenaPosition.x)
+       }
+       if (Math.round(arenaPosition.z / GRID_UNIT) !== Math.round((arenaPosition.z + 0.0001) / GRID_UNIT)) {
+         console.warn("WARNING: Z offset close to boundary" + this.el.id + " - " + arenaPosition.z)
+       }
+       if (Math.round(arenaPosition.z / GRID_UNIT) !== Math.round((arenaPosition.z - 0.0001) / GRID_UNIT)) {
+         console.warn("WARNING: Z offset close to boundary" + this.el.id + " - " + arenaPosition.z)
+       }
      }
    },
 
@@ -898,7 +900,7 @@ AFRAME.registerComponent('falling', {
 
      //TETRISlogXYZ("Testing movement to position: ", this.el.object3D.position, 2, true);
      this.testingNewPosition = true;
-     this.el.setAttribute('position', newPosition)
+     this.el.object3D.position.copy(newPosition)
 
      // Don't assume the new position is on-grid.
      // Carious possible centers of rotation for shapes can lead to shapes ending
@@ -919,7 +921,7 @@ AFRAME.registerComponent('falling', {
      else {
        // revert.
        //TETRISlogXYZ("Undoing position move to: ", this.el.object3D.position, 2, true);
-       this.el.setAttribute('position', oldPosition)
+       this.el.object3D.position.copy(oldPosition)
        //TETRISlogXYZ("Reverted to: ", this.el.object3D.position, 2, true);
        //TETRISlogAllBlockPositions(this.el);
        moved = false;
@@ -932,14 +934,8 @@ AFRAME.registerComponent('falling', {
    // returns true if moved, false otherwise.
    moveRelative: function(xMove, yMove, zMove) {
 
-     var moveVector = new THREE.Vector3();
-     moveVector.x = xMove;
-     moveVector.y = yMove;
-     moveVector.z = zMove;
-
-     // Pre-calculate where we are moving to (useful for logging in failure case)
-     position = this.el.getAttribute('position');
-     var newPosition = AFRAME.utils.clone(position);
+     var newPosition = new THREE.Vector3();
+     newPosition.copy(this.el.object3D.position);
      newPosition.x += xMove;
      newPosition.y += yMove;
      newPosition.z += zMove;
@@ -970,6 +966,7 @@ AFRAME.registerComponent('falling', {
      oldQuaternion.copy(this.el.object3D.quaternion);
      var oldPosition = new THREE.Vector3();
      oldPosition.copy(this.el.object3D.position);
+     var undo = false;
 
      // Apply the new (absolute) rotation.
      // Copy, not multiply, as this is an absolute rotation,
@@ -1001,18 +998,34 @@ AFRAME.registerComponent('falling', {
        // would be enough to enable the rotation.
        // Vectors to check are the base "save rotation vectors" set up when
        // we initialize the shape, with the rotation quaternion applied to them.
+       undo = true;
        var srv1 = this.saveRotationVector1.clone();
        srv1.applyQuaternion(quaternion);
+       logXYZ("SRV1", srv1, 16, true);
        var srv2 = this.saveRotationVector2.clone();
        srv2.applyQuaternion(quaternion);
+       logXYZ("SRV2", srv2, 16, true);
 
        if (this.canShapeMoveHere(this.el, srv1)) {
+         console.log("applied SRV1")
          this.el.object3D.position.add(srv1);
+         this.snapToGridXZ();
+         // Double check shape can move here after snapping to position.
+         if (this.canShapeMoveHere(this.el, {'x': 0, 'y': 0, 'z': 0})) {
+           undo = false;
+         }
        }
        else if (this.canShapeMoveHere(this.el, srv2)) {
+         console.log("applied SRV2")
          this.el.object3D.position.add(srv2);
+         this.snapToGridXZ();
+         // Double check shape can move here after snapping to position.
+         if (this.canShapeMoveHere(this.el, {'x': 0, 'y': 0, 'z': 0})) {
+           undo = false;
+         }
        }
-       else {
+
+       if (undo) {
          // Undo the rotation.
          TETRISlogXYZ("Undoing rotation at position: ", this.el.object3D.position, 2, true);
          this.el.object3D.quaternion.copy(oldQuaternion);
@@ -1143,6 +1156,37 @@ AFRAME.registerComponent('falling', {
      return (canMove);
    },
 
+   // Identify bugs quickly by consistency-checking various aspects of the shape
+   verifyShape: function () {
+
+     var worldPosition = new THREE.Vector3();
+     var arenaPosition = new THREE.Vector3();
+     var childrenArray = Array.from(this.el.childNodes);
+     var roundedX;
+     var roundedZ;
+
+     for (ii = 0; ii < childrenArray.length; ii++) {
+       // Every block's arena XZ position should be close to a multiple of
+       // GRID_UNIT.
+       // our snap logic is intended to ensure this.
+       childrenArray[ii].object3D.getWorldPosition(worldPosition);
+       arenaPosition.copy(worldPosition)
+       this.arenaEl.object3D.worldToLocal(arenaPosition)
+
+       roundedX = Math.round(arenaPosition.x/GRID_UNIT) * GRID_UNIT;
+       roundedZ = Math.round(arenaPosition.z/GRID_UNIT) * GRID_UNIT;
+
+       assert(Math.abs(arenaPosition.x - roundedX) < GRID_UNIT/10, "X not aligned");
+       assert(Math.abs(arenaPosition.z - roundedZ) < GRID_UNIT/10, "Z not aligned");
+     }
+
+     function assert(condition, message) {
+       if (!condition) {
+         throw new Error(message || "Assertion failed");
+       }
+     }
+   },
+
    tick: function (time, timeDelta) {
      // Check whether we crossed over a time boundary.
      //console.log("CLOCK: Tick called");
@@ -1150,6 +1194,10 @@ AFRAME.registerComponent('falling', {
      // We are assuming tick won't be called while we are
      // testing out a new position.
      //console.log(!this.testingNewPosition);
+     
+     if this.data.debug {
+       this.verifyShape();
+     }
 
      // Only blocks that haven't landed fall.
      if (!this.landed) {
