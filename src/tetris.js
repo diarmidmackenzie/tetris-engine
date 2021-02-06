@@ -1194,8 +1194,8 @@ AFRAME.registerComponent('falling', {
      // We are assuming tick won't be called while we are
      // testing out a new position.
      //console.log(!this.testingNewPosition);
-     
-     if this.data.debug {
+
+     if (this.data.debug) {
        this.verifyShape();
      }
 
