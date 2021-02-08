@@ -166,7 +166,11 @@ AFRAME.registerComponent('tetrisgame', {
   onArenaFull: function(event) {
     console.log("Game Over")
     this.gameOver = true;
-    this.el.emit("game-over")
+    this.el.emit("game-over",
+                 {score: this.score,
+                  level: this.level,
+                  gametime: this.gameTimeSecs},
+                 false);
   },
 
   onFocus: function() {
