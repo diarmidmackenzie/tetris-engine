@@ -15,6 +15,8 @@
     <!-- currently requires very latest 6doF code, hence referring to local copy - which must therefore be present-->
     <script src="../../6dof-object-control/src/6dof-object-control.js"></script>
     <script src="../../6dof-object-control/src/keyboard-hand-controls.js"></script>
+    <script src="../../6dof-object-control/src/thumbstick-object-control.js"></script>
+
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
@@ -42,15 +44,9 @@
       <a-entity environment="preset: forest; dressingAmount: 500"></a-entity>
 
       <a-entity position = "-3 0 -3" rotation = "0 45 0">
-        <a-entity id='shape-gen' shapegenerator="keys:KeyZ=xminus,
-                                                     KeyX=xplus,
-                                                     Enter=zRotMinus,
-                                                     ShiftRight=zRotPlus,
-                                                     Space=drop,
-                                                     #rhand.abuttondown=drop;
-                                                movecontrol: grip;
-                                                rotatecontrol: either;
-                                                nextshape:#nextshape"
+        <a-entity id='shape-gen' shapegenerator="movecontrol: #rhand.grip,#lhand.thumbstick;
+                                                 rotatecontrol: #rhand.grip,#rhand.trigger,#rhand.thumbstick;
+                                                 nextshape:#nextshape"
                                   position = "0.0 2.0 0"></a-entity>
         <a-entity id='nextshape' position = "1 2.0 -1"></a-entity>
         <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Space=start,#rhand.abuttondown=start"></a-entity>

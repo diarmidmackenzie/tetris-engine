@@ -156,11 +156,13 @@ The properties that can be set on this component are:
 
   If keys are not specified, they will default to the default controls for 3D tetris.  For VR-only applications, it shouldn't matter what keys are set, as the player won't be using the keyboard.
 
-- move: one of: "grip", "trigger" or"either".  Default: "grip".  Indicates which control will enable movement of the object, when using a 6doF controller.
+- move: An array of controls which control will enable movement of the object, when using a 6doF controller.  Each entry in the array is of the form {controller}.{control}, where {controller} is an ID for the relevant controller entity (e.g. #rhand or #lhand), and control is one of : grip, trigger or thumstick.  Default is #lhand.thumbstick,#rhand.grip
 
-- rotate: one of: "grip", "trigger" or "either".  Default: "trigger".  Indicates which control will enable movement of the object, when using a 6doF controller.
+- rotate: An array of controls which control will enable movement of the object, when using a 6doF controller.  Each entry in the array is of the form {controller}.{control}, where {controller} is an ID for the relevant controller entity (e.g. #rhand or #lhand), and control is one of : grip, trigger or thumstick.  Default is #rhand.thumbstick,#rhand.trigger.
 
-  It is fine to set move & rotate to overlapping values.  This will result in both movement and rotation at the same time, when that overlapping control is engaged.
+  It is OK to set move & rotate to overlapping values if desired.  This can work well for some controls (e.g. grip/trigger), but less well for thumbstick controls.
+
+  For full details on how the control systems work, see the README for the 6dof-object-control components.
 
 - nextshape: (optional) the ID of an entity with a location at which the next block to fall is shown.  If this is not provided, the next block is not shown.
 

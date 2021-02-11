@@ -4,21 +4,46 @@
 <html>
   <head>
     <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@4.2.1/dist/aframe-event-set-component.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@latest/key-bindings.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.2-alpha/src/6dof-object-control.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@latest/src/keyboard-hand-controls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.4-alpha/src/6dof-object-control.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.4-alpha/src/keyboard-hand-controls.min.js"></script>
+    <script src="../../6dof-object-control/src/thumbstick-object-control.js"></script>
     <script src="../src/tetris.js"></script>
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
-      <a-entity id="rig">
-        <a-entity camera position="0 1.6 0">
-
+      <a-entity id="rig" movement-controls>
+        <a-text id="log-panel2" value="R Hand Keyboard Data" position="-2 3 -7" color="grey"></a-text>
+        <a-text id="log-panel3" value="L Hand Keyboard Sim Data" position="-7 3 -7" color="grey"></a-text>
+        <a-text value="Press Left Shift or Right Shift to choose a controller.\n
+                       Press C or V to select Thumbstick x or y,\n
+                       then -/= to move in that direction.\n
+                       Also, use 4/5/6 to re-orient controller\n
+                       to test effect of thumbstick moves\n
+                       at different orientations."
+                       position="-7 -1 -5" color="grey"></a-text>
+        <a-camera position="0 1.6 0" look-controls>
+        </a-camera>
+        <a-entity id="lhand"
+            keyboard-hand-controls="logger:#log-panel3"
+            key-bindings="debug:true;bindings:ShiftLeft=enable,ShiftRight=disable"
+            visible="true"
+            event-set__pause="_target:#lhandstick;_event:disable; material.color: grey"
+            event-set__play="_target:#lhandstick;_event:enable; material.color: red"
+            position="-0.2 1.3 -0.4">
+            <a-box id="lhandstick" scale="0.05 0.3 0.05" material="color:red">
+            </a-box>
         </a-entity>
         <a-entity id="rhand"
-                  hand-controls="hand: right"
-                  keyboard-hand-controls="logger:#log-panel3"
-                  position="0.2 1.3 1.5">
+            keyboard-hand-controls="logger:#log-panel2"
+            key-bindings="bindings:ShiftRight=enable,ShiftLeft=disable"
+            visible="true"
+            event-set__pause="_target:#rhandstick;_event:disable; material.color: grey"
+            event-set__play="_target:#rhandstick;_event:enable; material.color: red"
+            position="0.2 1.3 -0.4">
+            <a-box id="rhandstick" scale="0.05 0.3 0.05" material="color:red">
+            </a-box>
         </a-entity>
       </a-entity>
       <a-mixin id="cube" geometry="primitive: box;"
@@ -36,8 +61,8 @@
                                               position = "0.0 2.0 -1"></a-entity>
       <a-entity tetrisgame="generator: #shape-gen; initialspeed: 10000;scoreboard: #scoreboard" key-bindings="debug:true;bindings:Enter=start"></a-entity>
 
-     <a-entity id="arena" arena="x: 3; z: 3" position = "0 1 -1." color=red>
-         <a-plane shadow="receive:true" height="0.3" width="0.3" rotation="-90 0 0" position = "-0.05 0 -0.05" color=red></a-plane>
+     <a-entity id="arena" arena="x: 3; z: 3" position = "0 1 -1" color=red>
+         <a-plane shadow="receive:true" height="0.3" width="0.3" rotation="-90 0 0" color=red></a-plane>
      </a-entity>
 
 
@@ -47,9 +72,8 @@
 
       <!--Some text panels for debug information - only necessary if you are
           running with debug=true-->
-      <a-text id="log-panel1" value="Panel 1" position="3 3 -5" color="black"></a-text>
-      <a-text id="log-panel2" value="Panel 2" position="-1 3 -5" color="black"></a-text>
-      <a-text id="log-panel3" value="Panel 3" position="-5 3 -5" color="black"></a-text>
+      <a-text id="log-panel1" value="Panel 1" position="5 5 -8" color="black"></a-text>
+      <a-text id="log-panel2" value="Panel 2" position="5 0 -8" color="black"></a-text>
 
     </a-scene>
   </body>

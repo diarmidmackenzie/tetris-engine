@@ -279,8 +279,8 @@ AFRAME.registerComponent('shapegenerator', {
                                                  Numpad9=zRotPlus,
                                                  Space=drop,
                                                  #rhand.abuttondown=drop`]},
-    movecontrol:    {type: 'string', default: "trigger"},
-    rotatecontrol:  {type: 'string', default: "grip"},
+    movecontrol:    {type: 'array', default: ["#lhand.thumbstick","#rhand.grip"]},
+    rotatecontrol:  {type: 'array', default: ["#lhand.thumbstick","#rhand.trigger"]},
     speed:          {type: 'number', default: 1000},
     nextshape:      {type: 'selector'},
     globalmixin:    {type: 'string', default: "cube"},
@@ -331,6 +331,15 @@ AFRAME.registerComponent('shapegenerator', {
     // Speed config.  This changes over time...
     this.setSpeed(this.data.speed);
 
+    // Set up configured controls.
+    this.sixdofController = "";
+    this.moveControls = {thumbstick:  "",
+                         sixdof: ""};
+    this.rotateControls = {thumbstick:  "",
+                           sixdof: ""};
+    this.storeControlsConfig(this.data.movecontrol, this.moveControls);
+    this.storeControlsConfig(this.data.rotatecontrol, this.rotateControls);
+
     /* This is experimental function where controls are enabled/disabled
     * based on direction of view.
     * it is dependent on the "attention" component.
@@ -365,6 +374,57 @@ AFRAME.registerComponent('shapegenerator', {
      // Now we have processed the shapes, set one up as our "Next shape".
      this.nextShapeChoice = this.selectRandomShape();
    },
+
+  storeControlsConfig: function(configArray, controlsData) {
+
+    configArray.forEach((item) => {
+      config = item.split(".");
+
+      // For back-compatibility, if no cotroller is specified, assume #rhand
+      // and warn.
+      if (!config[1]) {
+        config[1] = config[0];
+        config[0] = "#rhand";
+        console.warn("Controller specification missing.  Assuming #rhand");
+      }
+
+      switch (config[1]) {
+        case "either":
+        // Either is deprecated on this interface, in favour of an array of
+        // values, but can be handled the same as "grip" or "trigger.
+        console.warn("'either' setting deprecated.  See README for latest interface definition.");
+        case "grip":
+        case "trigger":
+          if ((this.sixdofController !== "") &&
+              (this.sixdofController !== config[0])) {
+            console.warn(`sixdof controls cannot be split across multiple controllers.  Choosing ${config[0]} over ${this.sixdofController}`);
+          }
+          this.sixdofController = config[0];
+
+          if ((controlsData.sixdof !== "") &&
+              (controlsData.sixdof !== config[1])) {
+            controlsData.sixdof = "either";
+          }
+          else
+          {
+            controlsData.sixdof = config[1];
+          }
+          break;
+
+        case "thumbstick":
+          controlsData.thumbstick = config[0];
+          break;
+
+        case "none":
+          console.warn("Value 'none' is deprecated.  See README for latest interface.");
+          break;
+
+        default:
+          console.warn("Unexpected config: " + item);
+          break;
+       }
+    });
+  },
 
   shapeDataFromCompassData: function(compassString) {
 
@@ -490,9 +550,9 @@ AFRAME.registerComponent('shapegenerator', {
       // Disable debugging - too verbose & gets in the way of debugging problems
       // with tetris-engine...
       entityEl.setAttribute('sixdof-control-proxy',
-                            `controller:#rhand;
-                             move:${this.data.movecontrol};
-                             rotate:${this.data.rotatecontrol};
+                            `controller:${this.sixdofController};
+                             move:${this.moveControls.sixdof};
+                             rotate:${this.moveControls.sixdof};
                              target:#${targetId}`);
     }
     else if (nextShape)
@@ -505,7 +565,19 @@ AFRAME.registerComponent('shapegenerator', {
       entityEl.object3D.position.copy(this.positionInArenaSpace);
       entityEl.setAttribute('falling', `interval:${this.speed}; arena:#${this.data.arena.id};infocus:${inFocus}`);
       entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
-      entityEl.setAttribute('sixdof-object-control', `proxy:#${targetId};movement:events;posgrid:relative;${this.debugString};${this.logger1String}`);
+
+      // Required conntoller config can be either or both of
+      // sixdof-object-control, and thumstick-object-control.
+      if (this.sixdofController !== "") {
+        entityEl.setAttribute('sixdof-object-control', `proxy:#${targetId};movement:events;posgrid:relative;${this.debugString};${this.logger1String}`);
+      }
+      if ((this.moveControls.thumbstick !== "") ||
+          (this.rotateControls.thumbstick !== "")) {
+        entityEl.setAttribute('thumbstick-object-control',
+                              `movement:events;
+                               movestick:${this.moveControls.thumbstick};
+                               rotatestick:${this.rotateControls.thumbstick}`);                               
+      }
     }
 
     /* The shape center may not be grid-aligned, so snap the shape to a grid
@@ -592,14 +664,17 @@ AFRAME.registerComponent('shapegenerator', {
     this.deleteAllObjectsWithClass(nextShapeClass)
 
     // Now get on with the creation of the new shapes.
-    // Create the Proxy
-    this.createShapeElement(proxyId,
-                            proxyClass,
-                            modelChoice,
-                            proxy = true,
-                            nextShape = false,
-                            shapeId,
-                            inFocus);
+    // Create the Proxy (required only if sixdof - i.e. non-thumbstick -
+    // controls are configured)
+    if (this.sixdofController !== "") {
+      this.createShapeElement(proxyId,
+                              proxyClass,
+                              modelChoice,
+                              proxy = true,
+                              nextShape = false,
+                              shapeId,
+                              inFocus);
+    }
 
     this.createShapeElement(shapeId,
                             shapeClass,
@@ -951,14 +1026,12 @@ AFRAME.registerComponent('falling', {
 
    rotateEventHandler: function(event) {
      // received "rotate" event from 6doF controller.
-     // the event data contains the Euler for the abolute new rotation.
+     // the event data contains the Quaternion for the abolute new rotation.
 
      console.log("Rotate Event from 6DOF Controller")
-     TETRISlogXYZ("Rotate data: ", event.detail, 1, true);
+     TETRISlogQuat("Rotate data: ", event.detail, 1, true);
 
-     var quaternion = new THREE.Quaternion();
-     quaternion.setFromEuler(event.detail)
-     this.rotateAbsolute(quaternion);
+     this.rotateAbsolute(event.detail);
    },
 
    rotateAbsolute: function(quaternion) {
@@ -1605,7 +1678,15 @@ AFRAME.registerComponent('arena', {
 
 
     entityEl.setAttribute("mixin", blockElement.getAttribute("mixin"));
-    entityEl.setAttribute("material", blockElement.getAttribute("material"));
+    // Shouldn't need material, as this should be covered by the mixin.
+    // Setting material when no material is set on the original block
+    // causes problems, as material gets set to default white.
+    // Why did we add this?  Can we remove without breaking things?
+    //entityEl.setAttribute("material", blockElement.getAttribute("material"));
+    // Try this...
+    if (blockElement.getAttribute("material")) {
+      entityEl.setAttribute("material", blockElement.getAttribute("material"));
+    }
     entityEl.setAttribute('class', 'block' + this.el.id);
     entityEl.setAttribute('integration-tracker', `arena: #${this.el.id}`);
     entityEl.object3D.position.copy(arenaPosition);

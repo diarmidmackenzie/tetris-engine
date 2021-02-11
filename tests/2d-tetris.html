@@ -12,6 +12,7 @@
     <script src="../src/tetris.js"></script>
     <!-- currently requires very latest 6doF code, hence referring to local copy - which must therefore be present-->
     <script src="../../6dof-object-control/src/6dof-object-control.js"></script>
+    <script src="../../6dof-object-control/src/thumbstick-object-control.js"></script>
     <script src="../../6dof-object-control/src/keyboard-hand-controls.js"></script>
   </head>
   <body>
@@ -65,8 +66,8 @@
                                                    ShiftRight=zRotPlus,
                                                    Space=drop,
                                                    #rhand.abuttondown=drop;
-                                              movecontrol: grip;
-                                              rotatecontrol: either;
+                                              movecontrol: #rhand.grip,#lhand.thumbstick;
+                                              rotatecontrol: #rhand.grip,#rhand.trigger,#rhand.thumbstick;
                                               nextshape:#nextshape"
                                 position = "0.0 2.0 -1"></a-entity>
       <a-entity id='nextshape' position = "1 2.0 -1"></a-entity>
