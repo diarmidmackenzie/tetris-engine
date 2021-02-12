@@ -277,8 +277,9 @@ AFRAME.registerComponent('shapegenerator', {
                                                  Numpad6=yRotMinus,
                                                  Numpad7=zRotMinus,
                                                  Numpad9=zRotPlus,
-                                                 Space=drop,
-                                                 #rhand.abuttondown=drop`]},
+                                                 Space=$drop,
+                                                 #rhand.abuttondown=$drop,
+                                                 #rhand.abuttonup=%drop`]},
     movecontrol:    {type: 'array', default: ["#lhand.thumbstick","#rhand.grip"]},
     rotatecontrol:  {type: 'array', default: ["#lhand.thumbstick","#rhand.trigger"]},
     speed:          {type: 'number', default: 1000},
@@ -1182,9 +1183,11 @@ AFRAME.registerComponent('falling', {
    },
    drop: function (event) {
      // instant 5x multiplier to shape-fall speed.
-     // Would be preferable to track up/down state for Space
-     // bar, and removed acceleration when space key comes up...
-     // Would require some more function in key-bindings.js...
+     // This is the old behaviour, still maintained.
+     // but preferred implementation is now via the "drop" state
+     // so that acceleration only happens while the key is held down.
+     // That can be set using "$drop" as a binding in key-bindings.js, in
+     // place of "drop" - this is the new default.
      console.log("drop");
      this.interval = this.data.interval / 5;
    },
@@ -1286,11 +1289,14 @@ AFRAME.registerComponent('falling', {
        // Track whether we landed (i.e. wanted to fall but couldn't).
        var justLanded = false;
 
+       // speed is modified based on the "drop" state.
+       var interval = this.el.is("drop") ? this.interval / 10 : this.interval;
+
        if (CONTINUOUS) {
          // Continuous movement.
-         // Speed should be GRID_UNIT distance per this.interval msecs.
+         // Speed should be GRID_UNIT distance per interval msecs.
          if (timeDelta > 0) {
-           distanceToFall = (GRID_UNIT * timeDelta) / this.interval;
+           distanceToFall = (GRID_UNIT * timeDelta) / interval;
            //TETRISlogXYZ("Object falling at position: ", this.el.object3D.position, 2, true);
            justLanded = !(this.moveRelative(0, -distanceToFall, 0));
 
@@ -1316,8 +1322,8 @@ AFRAME.registerComponent('falling', {
          // discrete movement.
          // we fall GRID_UNIT every this.interval msecs.
          var last_time = time - timeDelta;
-         var remainderNow = time % (this.interval);
-         var lastRemainder = last_time % (this.interval);
+         var remainderNow = time % (interval);
+         var lastRemainder = last_time % (interval);
 
          if (remainderNow < lastRemainder) {
            // We just crossed a time interval.  So make the object descend.
