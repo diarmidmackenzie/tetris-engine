@@ -576,7 +576,7 @@ AFRAME.registerComponent('shapegenerator', {
         entityEl.setAttribute('thumbstick-object-control',
                               `movement:events;
                                movestick:${this.moveControls.thumbstick};
-                               rotatestick:${this.rotateControls.thumbstick}`);                               
+                               rotatestick:${this.rotateControls.thumbstick}`);
       }
     }
 
@@ -1405,12 +1405,22 @@ AFRAME.registerComponent('snap', {
 // This should be either directly below the dropper (when the arena dimension is
 // odd) or half a block width offset from the dropper (when the arena dimension
 // is even.
+// "x" and "z" are the arena dimensions in block counts.
+// "clear" mode is either "layer", "xline", "zline" or "anyline".  This
+// configures the conditions under which blocks are cleared:
+// when an entire layer is completed, or as soon as an line is completed, in the
+// x direction, z direction, or both.
+// if z = 1 (2D game typical config) then xline and layer are equivalent.
+// in this situation, zline and anyline aren't recommended, as every block
+// would be deleted as soon as it landed!
+
 AFRAME.registerComponent('arena', {
   dependencies: ['position'],
 
   schema: {
     x: {type: 'number'},
-    z: {type: 'number'}
+    z: {type: 'number'},
+    clear: {type: 'string', default: "layer"}
   },
 
   init: function () {
@@ -1420,6 +1430,7 @@ AFRAME.registerComponent('arena', {
     this.depth = this.data.z;
     this.blocksPendingIntegrationCount = 0
     this.arenaFullIndicator = false;
+    this.checkLinesAgain = false;
 
     // Falling blocks are tracked by the center of the block.
     // The cornerOffset is the offset between the arena "position"
@@ -1435,7 +1446,32 @@ AFRAME.registerComponent('arena', {
 
   update: function () {
 
-    // Now that we track blocks in Arena space, it's essential that the
+    // Set up layer/line deletion config.
+    switch (this.data.clear) {
+      case "layer":
+        this.deleteFullXLine = false;
+        this.deleteFullZLine = false;
+        break;
+
+      case "xline":
+        this.deleteFullXLine = true;
+        this.deleteFullZLine = false;
+        break;
+
+      case "zline":
+        this.deleteFullXLine = false;
+        this.deleteFullZLine = true;
+        break;
+
+      case "anyline":
+        this.deleteFullXLine = true;
+        this.deleteFullZLine = true;
+
+      default:
+        console.log("Unexpected config for 'clear': " + this.data.clear);
+    }
+
+    // Since we track blocks in Arena space, it's essential that the
     // shape generator is aligned with a GRID_UNIT in Arena space.
     // This means that the non-centered offset for the cases where the
     // Arena dimensions are even must be allowed for in code, it can't be
@@ -1717,10 +1753,23 @@ AFRAME.registerComponent('arena', {
 
       //this.checkConsistency();
 
-      var layersRemoved = this.removeAnyCompleteLayers();
+      if ((!this.deleteFullXLine) &&
+          (!this.deleteFullZLine)) {
+        var layersRemoved = this.removeAnyCompleteLayers();
 
-      if (layersRemoved > 0) {
-        this.el.emit("layers-removed", {count: layersRemoved});
+        if (layersRemoved > 0) {
+          this.el.emit("layers-removed", {count: layersRemoved});
+        }
+
+      }
+      else {
+        var linesRemoved = this.removeAnyCompleteLines();
+
+        if (linesRemoved > 0) {
+          // We don't have a separate event for "lines removed"
+          // just re-use the layers-removed event.
+          this.el.emit("layers-removed", {count: linesRemoved});
+        }
       }
 
       //this.checkConsistency();
@@ -1758,6 +1807,159 @@ AFRAME.registerComponent('arena', {
     return (layersRemoved);
   },
 
+  // Returns number of layers removed.
+  removeAnyCompleteLines: function () {
+
+    var linesRemoved = 0;
+
+    // When we delete a single X or Z line, this changes all the layers above it
+    // so the order in which we look at layers makes a difference to what blocks
+    // we delete.
+    // We take the following approach:
+    // - Analyze all layers for all possible lines in both X & Z dimensions, as
+    //   they are at the moment the shape lands.
+    // - Then based on the lines that disappeared, make blocks fall the
+    //   appropriate distance.  The fall distance may be different for each
+    //   column in the arena.
+    // - Once all blocks have been repositioned, check for any more lines that
+    //   may have now formed.
+    // - Repeat until we reach a stable position (no completed lines).
+    //
+    // To avoid confusing players, we pause briefly (500 msecs) between each
+    // phase of the above.  Otherwise they may not understand why certain layers
+    // were deleted.
+    //
+    // That will be going on simultaneously with the next shape coming into the
+    // arena.  In theory that could land before the analysis is completed, in
+    // which case it will be folded into that analysis, and all the scores will
+    // be combined.  In practise that's extremely unlikely to happen...
+
+    // We report a single "linesRemoved" figure for all of this.
+
+    // Because we are not causing blocks to fall yet, it really doesn't matter
+    // what order we analyze in.  Upwards from zero is simplest!
+
+    // We build up a table of cells indicating which are to be deleted.
+    // Start analyzing in the Z axis, then layer on analysis in the X axis.
+    // This design is motivated by a particular care for the case where there
+    // are intersection X & Z rows being deleted.  We want to only destory one
+    // block at this intersection, not two...
+    cellsToDelete = [];
+    for (var ii = 0; ii < this.cellsArray.length; ii++) {
+      var row = []
+
+      for (var jj = 0 ; jj < this.width; jj++) {
+
+        var column = [];
+        var deleteBlock = 0;
+
+        if (this.deleteFullZLine) {
+          var lineCellCount = this.cellsArray[ii][jj].reduce((a,b) => a + b);
+          if (lineCellCount == this.depth) {
+            deleteBlock = 1;
+            linesRemoved++;
+          }
+        }
+
+        for (var kk = 0; kk < this.depth; kk++) {
+          column.push(deleteBlock);
+        }
+        row.push(column);
+      }
+      cellsToDelete.push(row);
+    }
+
+    if (this.deleteFullXLine) {
+      for (var ii = 0; ii < this.cellsArray.length; ii++) {
+        for (var kk = 0 ; kk < this.depth; kk++) {
+          lineCellCount = 0;
+          // Can't use a reduce here, as we are not iterating over
+          // the lowest dimension.
+          // so doing it the long-hand way.
+          for (var jj = 0; jj < this.width; jj++) {
+            lineCellCount += this.cellsArray[ii][jj][kk];
+          }
+          if (lineCellCount == this.width) {
+            for (var jj = 0; jj < this.width; jj++) {
+              cellsToDelete[ii][jj][kk] = 1;
+            }
+            linesRemoved++;
+          }
+        }
+      }
+    }
+
+    if (linesRemoved > 0) {
+      // We now do the work to remove these lines.
+
+      // For our internal representation (this.cellsArray), we work through each
+      // column in the arena, delete the blocks that are marked with a 1, and drop the blocks above by the
+      // corresponding amount.
+      // We work from the bottom up.
+
+      for (var jj = 0; jj < this.width; jj++) {
+        for (var kk = 0; kk < this.width; kk++) {
+          var drop = 0;
+          for (var ii = 0; ii < this.cellsArray.length; ii++) {
+            if (cellsToDelete[ii][jj][kk] == 1) {
+              drop += 1;
+            }
+            if (ii + drop < this.cellsArray.length) {
+              // available data to copy down.
+              this.cellsArray[ii][jj][kk] = this.cellsArray[ii + drop][jj][kk];
+            }
+            else
+            {
+              this.cellsArray[ii][jj][kk] = 0;
+            }
+          }
+        }
+      }
+
+      // For the block entities, we take a different approach.
+      // It's not easy to map from cell indices to blocks, so instead we iterate
+      // through all blocks, and determine the correct action for each, based on
+      // their cell indices.
+      var sceneEl = document.querySelector('a-scene');
+      var blockList = sceneEl.querySelectorAll('.block' + this.el.id);
+
+      for (var blockIx = 0; blockIx < blockList.length; blockIx++) {
+
+        var position = blockList[blockIx].object3D.position;
+        const cellIndex = this.arenaPositionToCellIndices(position, true);
+
+        if (cellsToDelete[cellIndex.y][cellIndex.x][cellIndex.z]) {
+          // destroy the block.
+          this.el.removeChild(blockList[blockIx]);
+        }
+        else {
+          // We aren't destroying it, but maybe we need to drop it.
+          var drop = 0;
+          for (var ii = 0; ii < cellIndex.y; ii++) {
+            drop += (cellsToDelete[ii][cellIndex.x][cellIndex.z]);
+          }
+          // drop the block by the correct number of spaces.
+          position.y -= GRID_UNIT * drop;
+        }
+      }
+
+      // Finally, we need to consider that all these movements may have
+      // resulted in further lines being formed.
+      // We could do this analysis now, but a better player experience is to
+      // see how these new lines are formed and deleted, so we delay 500 msecs
+      // before repeating the analysis.
+      //
+      // Set a variable, so this is triggered in the tick call.
+      this.checkLinesTime = this.lastTickTime + 500;
+    }
+    else {
+      // No lines removed.  No need to check again until the next shape falls.
+      this.checkLinesTime = 0;
+    }
+
+    return (linesRemoved);
+  },
+
   // Function to remove a layer (and remove associated blocks).
   // This is used when a layer is completed, and also to clear the arena
   // at the end of the game.
@@ -1790,6 +1992,24 @@ AFRAME.registerComponent('arena', {
       else if (cellIndex.y > layer) {
         // layer above - move down.
         position.y -= GRID_UNIT;
+      }
+    }
+  },
+
+  tick: function(time, timeDelta) {
+
+    this.lastTickTime = time;
+
+    // This processing is only triggered if we are removing x or Z lines,
+    // not layers.
+    if ((this.checkLinesTime > 0) && (time > this.checkLinesTime))
+    {
+      var linesRemoved = this.removeAnyCompleteLines();
+
+      if (linesRemoved > 0) {
+        // We don't have a separate event for "lines removed"
+        // just re-use the layers-removed event.
+        this.el.emit("layers-removed", {count: linesRemoved});
       }
     }
   }
