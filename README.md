@@ -156,9 +156,9 @@ The properties that can be set on this component are:
 
   If keys are not specified, they will default to the default controls for 3D tetris.  For VR-only applications, it shouldn't matter what keys are set, as the player won't be using the keyboard.
 
-- move: An array of controls which control will enable movement of the object, when using a 6doF controller.  Each entry in the array is of the form {controller}.{control}, where {controller} is an ID for the relevant controller entity (e.g. #rhand or #lhand), and control is one of : grip, trigger or thumstick.  Default is #lhand.thumbstick,#rhand.grip
+- move: An array of controls which control will enable movement of the object, when using a 6doF controller.  Each entry in the array is of the form {controller}.{control}, where {controller} is an ID for the relevant controller entity (e.g. #rhand or #lhand), and control is one of : grip, trigger or thumbstick.  Default is #lhand.thumbstick,#rhand.grip
 
-- rotate: An array of controls which control will enable movement of the object, when using a 6doF controller.  Each entry in the array is of the form {controller}.{control}, where {controller} is an ID for the relevant controller entity (e.g. #rhand or #lhand), and control is one of : grip, trigger or thumstick.  Default is #rhand.thumbstick,#rhand.trigger.
+- rotate: An array of controls which control will enable movement of the object, when using a 6doF controller.  Each entry in the array is of the form {controller}.{control}, where {controller} is an ID for the relevant controller entity (e.g. #rhand or #lhand), and control is one of : grip, trigger or thumbstick.  Default is #rhand.thumbstick,#rhand.trigger.
 
   It is OK to set move & rotate to overlapping values if desired.  This can work well for some controls (e.g. grip/trigger), but less well for thumbstick controls.
 
