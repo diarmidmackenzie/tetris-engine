@@ -279,13 +279,14 @@ AFRAME.registerComponent('shapegenerator', {
                                                  Numpad9=zRotPlus,
                                                  Space=$drop,
                                                  #rhand.abuttondown=$drop,
-                                                 #rhand.abuttonup=%drop`]},
+                                                 #rhand.abuttonup=%%drop`]},
     movecontrol:    {type: 'array', default: ["#lhand.thumbstick","#rhand.grip"]},
     rotatecontrol:  {type: 'array', default: ["#lhand.thumbstick","#rhand.trigger"]},
     speed:          {type: 'number', default: 1000},
     nextshape:      {type: 'selector'},
     globalmixin:    {type: 'string', default: "cube"},
-    pershapemixin:  {type: 'string'},
+    pershapemixin:  {type: 'string', default: ""},
+    arenapershapemixin:  {type: 'string', default: ""},
     debug:          {type: 'boolean', default: false},
     logger1:        {type: 'string', default: "#log-panel1"},
     logger2:        {type: 'string', default: "#log-panel2"}
@@ -564,7 +565,14 @@ AFRAME.registerComponent('shapegenerator', {
     else // regular shape in play area.  Spawn at the shape generator (its parent).
     {
       entityEl.object3D.position.copy(this.positionInArenaSpace);
-      entityEl.setAttribute('falling', `interval:${this.speed}; arena:#${this.data.arena.id};infocus:${inFocus}`);
+      // set up Arena mixin string based on config
+      var arenaMixinString = "";
+      if (this.data.arenapershapemixin !== "") {
+        // Separate mixin to be used once the shape lands in the arena.
+        arenaMixinString = `;arenamixin:${this.data.arenapershapemixin + modelChoice.toString()}`;
+      }
+
+      entityEl.setAttribute('falling', `interval:${this.speed}; arena:#${this.data.arena.id};infocus:${inFocus}${arenaMixinString}`);
       entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
 
       // Required conntoller config can be either or both of
@@ -726,7 +734,8 @@ AFRAME.registerComponent('falling', {
      interval: {type: 'number'},
      arena: {type: 'selector'},
      shapeindex: {type: 'string'},
-     infocus: {type: 'boolean', default: true}
+     infocus: {type: 'boolean', default: true},
+     arenamixin: {type: 'string', default: ""}
    },
 
    init: function () {
@@ -791,26 +800,32 @@ AFRAME.registerComponent('falling', {
      if (firstChild) {
        firstChild.object3D.getWorldPosition(arenaPosition);
        this.arenaEl.object3D.worldToLocal(arenaPosition)
-       console.log("Raw Shape X:" + this.el.object3D.position.x)
-       console.log("Raw Shape Z:" + this.el.object3D.position.z)
+       if (this.data.debug) {
+         console.log("Raw Shape X:" + this.el.object3D.position.x)
+         console.log("Raw Shape Z:" + this.el.object3D.position.z)
 
-       console.log("Raw Block X:" + arenaPosition.x)
-       console.log("Raw Block Z:" + arenaPosition.z)
+         console.log("Raw Block X:" + arenaPosition.x)
+         console.log("Raw Block Z:" + arenaPosition.z)
+       }
 
        // Find x & z offsets from grid.
 
        const offsetX = arenaPosition.x - (Math.round(arenaPosition.x / GRID_UNIT) * GRID_UNIT)
        const offsetZ = arenaPosition.z - (Math.round(arenaPosition.z / GRID_UNIT) * GRID_UNIT)
 
-       console.log("Snap offset X:" + offsetX)
-       console.log("Snap offset Z:" + offsetZ)
+       if (this.data.debug) {
+         console.log("Snap offset X:" + offsetX)
+         console.log("Snap offset Z:" + offsetZ)
+       }
 
        // Apply these to the shape.
        this.el.object3D.position.x -= offsetX;
        this.el.object3D.position.z -= offsetZ;
 
-       console.log("Adjusted Shape X:" + this.el.object3D.position.x)
-       console.log("Adjusted Shape Z:" + this.el.object3D.position.z)
+       if (this.data.debug) {
+         console.log("Adjusted Shape X:" + this.el.object3D.position.x)
+         console.log("Adjusted Shape Z:" + this.el.object3D.position.z)
+       }
 
        // Check for position that is very close to a boundary.
        // I'm concerned about these, as possible cause of bugs where
@@ -1371,11 +1386,18 @@ AFRAME.registerComponent('falling', {
 
    integrateShapeToArena: function (arena, element) {
 
+     // Use arena-specific mxin if specified, else keep the one from this.
+     // element.
+     var mixin = "";
+     if (this.data.arenamixin !== "") {
+       mixin = this.data.arenamixin
+     }
+
      var childrenArray = Array.from(element.childNodes);
 
      for (ii = 0; ii < childrenArray.length; ii++) {
 
-       arena.integrateBlock(childrenArray[ii]);
+       arena.integrateBlock(childrenArray[ii], mixin);
      }
    }
  });
@@ -1437,6 +1459,7 @@ AFRAME.registerComponent('arena', {
     this.blocksPendingIntegrationCount = 0
     this.arenaFullIndicator = false;
     this.checkLinesAgain = false;
+    this.nextBlockId = 0;
 
     // Falling blocks are tracked by the center of the block.
     // The cornerOffset is the offset between the arena "position"
@@ -1605,7 +1628,7 @@ AFRAME.registerComponent('arena', {
     const yIndex = Math.floor((objectPosition.y - (this.cornerOffset.y)) / GRID_UNIT);
     const zIndex = Math.floor((objectPosition.z - (this.cornerOffset.z)) / GRID_UNIT);
 
-    if (debug) {
+    if (this.data.debug) {
       console.log(`Object: x: ${objectPosition.x}, y: ${objectPosition.y}, z: ${objectPosition.z}`)
       console.log(`Arena corner: x:${this.cornerOffset.x}, y:${this.cornerOffset.y}, z:${this.cornerOffset.z}`)
       console.log(`Indices: x:${xIndex}, y:${yIndex}, z:${zIndex}`)
@@ -1623,7 +1646,9 @@ AFRAME.registerComponent('arena', {
     var isOpenSpace;
     // Find the cell that maps to this position.
     const cellIndex = this.arenaPositionToCellIndices(objectPosition);
-    TETRISlogXYZ("Cell Indices:", cellIndex, 2, true);
+    if (this.data.debug) {
+      TETRISlogXYZ("Cell Indices:", cellIndex, 2, true);
+    }
 
     if ((cellIndex.x >= 0 && cellIndex.x < this.width) &&
         (cellIndex.z >= 0 && cellIndex.z < this.depth) &&
@@ -1653,7 +1678,7 @@ AFRAME.registerComponent('arena', {
   },
 
   // Integrate a block of a shape object that has fallen into the arena floor.
-  integrateBlock: function (blockElement) {
+  integrateBlock: function (blockElement, mixin) {
 
     // Block is a child of the shape, and therefore position is in shape space.
     // Translate it into arena space via world space.
@@ -1718,17 +1743,21 @@ AFRAME.registerComponent('arena', {
 
     var entityEl = document.createElement('a-entity');
 
+    if (mixin !== "") {
+      entityEl.setAttribute("mixin", mixin);
+    }
+    else
+    {
+      entityEl.setAttribute("mixin", blockElement.getAttribute("mixin"));
+    }
 
-    entityEl.setAttribute("mixin", blockElement.getAttribute("mixin"));
-    // Shouldn't need material, as this should be covered by the mixin.
-    // Setting material when no material is set on the original block
-    // causes problems, as material gets set to default white.
-    // Why did we add this?  Can we remove without breaking things?
-    //entityEl.setAttribute("material", blockElement.getAttribute("material"));
-    // Try this...
+    // Color is not always covered by the mixin.  So if material is
+    // present, copy that across too.
     if (blockElement.getAttribute("material")) {
       entityEl.setAttribute("material", blockElement.getAttribute("material"));
     }
+    entityEl.setAttribute('id', "b" + this.nextBlockId);
+    this.nextBlockId++;
     entityEl.setAttribute('class', 'block' + this.el.id);
     entityEl.setAttribute('integration-tracker', `arena: #${this.el.id}`);
     entityEl.object3D.position.copy(arenaPosition);
@@ -1997,7 +2026,8 @@ AFRAME.registerComponent('arena', {
       }
       else if (cellIndex.y > layer) {
         // layer above - move down.
-        position.y -= GRID_UNIT;
+        position.y -= GRID_UNIT;        
+        blockList[blockIx].emit("object3DUpdated");
       }
     }
   },

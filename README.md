@@ -104,7 +104,7 @@ And if you want to simulate a 6DoF controller using a computer keyboard (for deb
 See the examples directory for some basic examples.  At a very high level, you'll need the following elements in your A-Frame scene:
 
 1. An entity for the 6DoF controller you want to use
-2. A mixin called "cube" which contains some basic info about the appearance of the blocks you want to play with.
+2. A mixin called "cube" (that's the  default - customizable as per details below) which contains some basic info about the appearance of the blocks you want to play with.
 3. An entity with the tetrisgame component.
 4. An entity with the shapegenerator component, positioned where you want shapes to spawn.
 5. A horizontal plane entity, with the arena component, that describes the surface onto which the pieces will fall.
@@ -165,6 +165,12 @@ The properties that can be set on this component are:
   For full details on how the control systems work, see the README for the 6dof-object-control components.
 
 - nextshape: (optional) the ID of an entity with a location at which the next block to fall is shown.  If this is not provided, the next block is not shown.
+
+- globalmixin: (default: cube) the name of a mixin to be applied to the blocks.  This should contain geometry and scale information (box, and "0.1 0.1 0.1" are a good starting point!).  It does not need to contain color information, which will be applied to the blocks separately based on a hard-coded list of colors.  If you want to customize the colors, see the "pershapemixin"option.
+
+- pershapemixin: (default: "") the prefix of a set of mixin names to be applied to the blocks.  There should be a set of mixins with names of the form: <pershapemixin><number>, where number starts at 0 and goes up.  There should be enough mixins to cover the number of different shape types  configured under "shapes".  Mixins will be assigned to shapes in order.  This mixin should include geometry, scale and material information.  When this is specified, the "globalmixin" setting is also applied to the shape, but no color is added other than what is specified in the mixin.
+
+- arenaperhapemixin: (default: "") this operates exactly like peshapemixin (i.e. it is a prefix of a set of numbered mixins starting from 0), but it applies at the point the block lands in the arena.  This allows for landed blocks to have a different appearance from in-flight blocks.  It can also be a good way to apply other changes to blocks as they land, for example making them become members of an Instanced Mesh, which can help significantly with performance. (see diarmidmackenzie/instanced-mesh/ and diarmidmackenzie/tetrisland/ for more details and examples).  Note that arenapershapemixin completely overrides both globalmixin and pershapemixin, for shapes once they have landed.
 
 - debug: Set "debug:true" on either to enable detailed console logging, and real-time data output to logger elements.
 

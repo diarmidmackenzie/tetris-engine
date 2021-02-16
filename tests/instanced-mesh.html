@@ -1,0 +1,81 @@
+<!-- Basic 2D Tetris with Instanced Mesh for Arena -->
+-->
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@2.0.0/dist/aframe-environment-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+    <script src="../src/tetris.js"></script>
+    <script src="../../instanced-mesh/src/instanced-mesh.js"></script>
+    <script src="../../key-bindings/key-bindings.js"></script>
+
+  </head>
+  <body>
+    <a-scene debug renderer="colorManagement:true">
+      <a-entity id="rig" movement-controls>
+        <a-entity camera position="0 1.6 0" look-controls accesskey="">
+          <a-text id="log-panel3" value="Keyboard Sim Data" position="-5 3 -7" color="grey"></a-text>
+        </a-entity>
+      </a-entity>
+
+      <a-mixin id="cube" geometry="primitive: box;"
+               scale="0.1 0.1 0.1"
+               shadow></a-mixin>
+
+      <!-- 8 mixins needed - all point to the same mesh, though-->
+      <a-mixin id="arena-psm0" mixin="cube" instanced-mesh-member="mesh:#arena-mesh"></a-mixin>
+      <a-mixin id="arena-psm1" mixin="cube" instanced-mesh-member="mesh:#arena-mesh"></a-mixin>
+      <a-mixin id="arena-psm2" mixin="cube" instanced-mesh-member="mesh:#arena-mesh"></a-mixin>
+      <a-mixin id="arena-psm3" mixin="cube" instanced-mesh-member="mesh:#arena-mesh"></a-mixin>
+      <a-mixin id="arena-psm4" mixin="cube" instanced-mesh-member="mesh:#arena-mesh"></a-mixin>
+      <a-mixin id="arena-psm5" mixin="cube" instanced-mesh-member="mesh:#arena-mesh"></a-mixin>
+      <a-mixin id="arena-psm6" mixin="cube" instanced-mesh-member="mesh:#arena-mesh"></a-mixin>
+      <a-mixin id="arena-psm7" mixin="cube" instanced-mesh-member="mesh:#arena-mesh"></a-mixin>
+
+      <!-- 8 mixins needed for shapes when falling.  All the same. -->
+      <a-mixin id="shape-psm0" material="color:red"></a-mixin>
+      <a-mixin id="shape-psm1" material="color:red" ></a-mixin>
+      <a-mixin id="shape-psm2" material="color:red"></a-mixin>
+      <a-mixin id="shape-psm3" material="color:red"></a-mixin>
+      <a-mixin id="shape-psm4" material="color:red"></a-mixin>
+      <a-mixin id="shape-psm5" material="color:red"></a-mixin>
+      <a-mixin id="shape-psm6" material="color:red"></a-mixin>
+      <a-mixin id="shape-psm7" material="color:red"></a-mixin>
+
+      <!--light and environment-->
+      <a-entity light="type:directional; castShadow:true;" position='0 20 0'></a-entity>
+      <a-entity environment="preset: forest; dressingAmount: 500"></a-entity>
+
+
+      <!--<a-entity id='shape-gen' shapegenerator="shapes:EEE,EEU,EED,EUE,EDE,EUDE,EUW;-->
+      <!-- simple set of shapes makes basic testing of row deletion nice & simple!-->
+      <a-entity id='shape-gen' shapegenerator="shapes:EEEE;
+                                              keys:KeyZ=xminus,
+                                                   KeyX=xplus,
+                                                   Enter=zRotMinus,
+                                                   ShiftRight=zRotPlus,
+                                                   Space=$drop;
+                                              movecontrol: #lhand.thumbstick;
+                                              rotatecontrol: #rhand.thumbstick;
+                                              nextshape:#nextshape;
+                                              pershapemixin:shape-psm;
+                                              arenapershapemixin:arena-psm"
+                                position = "0.0 2.0 -1"></a-entity>
+      <a-entity id='nextshape' position = "1 2.0 -1"></a-entity>
+      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Space=start,#rhand.abuttondown=start"></a-entity>
+
+      <a-entity id="arena" arena="x: 10; z: 1" position = "0 0.5 -1" >
+        <a-entity id="arena-mesh" geometry="primitive: box;" shadow material="color:red" instanced-mesh="capacity:100;debug:true"></a-entity>
+        <a-plane shadow="receive:true" height="0.1" width="1.0" rotation="-90 0 0" position = "0.05 0 0"></a-plane>
+      </a-entity>
+
+
+      <!--Scoreboard, and some text to guide the user-->
+      <a-text id="scoreboard" value="Score" position="3 1 -3" color="black"></a-text>
+      <a-text position="-6 1 -5" color="black" value="Space to start.
+                                                      Keyboard Controls:Z/X to move L/R
+                                                      Enter/Shift to Rotate cw/ccw.
+                                                      Space to drop."></a-text>
+    </a-scene>
+  </body>
+</html>
