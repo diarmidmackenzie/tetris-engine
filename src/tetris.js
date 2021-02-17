@@ -35,7 +35,7 @@ AFRAME.registerComponent('tetrisgame', {
     // Find and initialize the scoreboard.
     this.scoreboard = document.querySelector(this.data.scoreboard);
     this.score = 0;
-    this.scoreboard.setAttribute("text", "value: Score:" + this.score);
+    this.scoreboard.setAttribute("text", "value: Time: \t0:00\nLevel: \t0\nScore:\t0");
     this.lastScoreboardTime = 0;
     this.gameOver = true; // before game has started, we consider "game over".
     this.gameStartTime = 0;
@@ -159,8 +159,8 @@ AFRAME.registerComponent('tetrisgame', {
     // 1 point for 1 layer, 4 for 2 layers, 9 for 3 etc.
     this.score += Math.pow(event.detail.count, 2);
 
-    console.log("Updating scoreboard");
-    this.scoreboard.setAttribute("text", "value: Score:" + this.score);
+    //console.log("Updating scoreboard");
+    this.updateScoreboard();
   },
 
   onArenaFull: function(event) {
@@ -208,10 +208,10 @@ AFRAME.registerComponent('tetrisgame', {
     var scoreboardText = "value:"
     var gameTimeMins = Math.floor(this.gameTimeSecs / 60);
     var gameTimeSecsRemainder = this.gameTimeSecs % 60
-    scoreboardText += "Time: " + gameTimeMins + ":" +
+    scoreboardText += "Time: \t" + gameTimeMins + ":" +
                       gameTimeSecsRemainder.toString().padStart(2,'0') + "\n";
-    scoreboardText += "Level: " + this.level + "\n";
-    scoreboardText += "Score: " + this.score + "\n";
+    scoreboardText += "Level: \t" + this.level + "\n";
+    scoreboardText += "Score:\t" + this.score + "\n";
 
     this.scoreboard.setAttribute("text", scoreboardText);
   },
