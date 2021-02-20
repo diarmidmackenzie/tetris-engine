@@ -559,7 +559,7 @@ AFRAME.registerComponent('shapegenerator', {
       entityEl.setAttribute('sixdof-control-proxy',
                             `controller:${this.sixdofController};
                              move:${this.moveControls.sixdof};
-                             rotate:${this.moveControls.sixdof};
+                             rotate:${this.rotateControls.sixdof};
                              target:#${targetId}
                              ${disabledString}`);
     }
@@ -2058,7 +2058,7 @@ AFRAME.registerComponent('arena', {
       }
       else if (cellIndex.y > layer) {
         // layer above - move down.
-        position.y -= GRID_UNIT;        
+        position.y -= GRID_UNIT;
         blockList[blockIx].emit("object3DUpdated");
       }
     }
