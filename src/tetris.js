@@ -333,12 +333,14 @@ AFRAME.registerComponent('shapegenerator', {
     // Speed config.  This changes over time...
     this.setSpeed(this.data.speed);
 
-    // Set up configured controls.
+    // Set up configured controls.  If sixdof string is left blank, the
+    // sixdof proxy component will set default.  So initialize to "none" for
+    // the case where no controls are specified.
     this.sixdofController = "";
     this.moveControls = {thumbstick:  "",
-                         sixdof: ""};
+                         sixdof: "none"};
     this.rotateControls = {thumbstick:  "",
-                           sixdof: ""};
+                           sixdof: "none"};
     this.storeControlsConfig(this.data.movecontrol, this.moveControls);
     this.storeControlsConfig(this.data.rotatecontrol, this.rotateControls);
 
