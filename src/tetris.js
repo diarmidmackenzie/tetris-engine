@@ -597,7 +597,8 @@ AFRAME.registerComponent('shapegenerator', {
         entityEl.setAttribute('thumbstick-object-control',
                               `movement:events;
                                movestick:${this.moveControls.thumbstick};
-                               rotatestick:${this.rotateControls.thumbstick}
+                               rotatestick:${this.rotateControls.thumbstick};
+                               moverepeattime:100;
                                ${disabledString}`);
       }
     }
