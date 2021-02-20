@@ -548,6 +548,11 @@ AFRAME.registerComponent('shapegenerator', {
     entityEl.setAttribute("id", elementId);
     entityEl.setAttribute('class', shapeClass);
 
+    var disabledString="";
+    if (!inFocus) {
+      disabledString=";disabled:false"
+    }
+
     if (proxy) {
       // Disable debugging - too verbose & gets in the way of debugging problems
       // with tetris-engine...
@@ -555,7 +560,8 @@ AFRAME.registerComponent('shapegenerator', {
                             `controller:${this.sixdofController};
                              move:${this.moveControls.sixdof};
                              rotate:${this.moveControls.sixdof};
-                             target:#${targetId}`);
+                             target:#${targetId}
+                             ${disabledString}`);
     }
     else if (nextShape)
     {
@@ -572,20 +578,25 @@ AFRAME.registerComponent('shapegenerator', {
         arenaMixinString = `;arenamixin:${this.data.arenapershapemixin + modelChoice.toString()}`;
       }
 
-      entityEl.setAttribute('falling', `interval:${this.speed}; arena:#${this.data.arena.id};infocus:${inFocus}${arenaMixinString}`);
       entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
 
-      // Required conntoller config can be either or both of
+      // Required controller config can be either or both of
       // sixdof-object-control, and thumstick-object-control.
+      var proxyString = "";
       if (this.sixdofController !== "") {
         entityEl.setAttribute('sixdof-object-control', `proxy:#${targetId};movement:events;posgrid:relative;${this.debugString};${this.logger1String}`);
+        proxyString = `;proxy:#${targetId}`;
       }
+
+      entityEl.setAttribute('falling', `interval:${this.speed}; arena:#${this.data.arena.id};infocus:${inFocus}${arenaMixinString}${proxyString}`);
+
       if ((this.moveControls.thumbstick !== "") ||
           (this.rotateControls.thumbstick !== "")) {
         entityEl.setAttribute('thumbstick-object-control',
                               `movement:events;
                                movestick:${this.moveControls.thumbstick};
-                               rotatestick:${this.rotateControls.thumbstick}`);
+                               rotatestick:${this.rotateControls.thumbstick}
+                               ${disabledString}`);
       }
     }
 
@@ -735,7 +746,8 @@ AFRAME.registerComponent('falling', {
      arena: {type: 'selector'},
      shapeindex: {type: 'string'},
      infocus: {type: 'boolean', default: true},
-     arenamixin: {type: 'string', default: ""}
+     arenamixin: {type: 'string', default: ""},
+     proxy: {type: 'selector', default: ""}
    },
 
    init: function () {
@@ -919,12 +931,24 @@ AFRAME.registerComponent('falling', {
      console.log("Focussing " + this.el.id);
      this.attachEventListeners();
      this.infocus = true;
+
+     // Also relay events to enable controls on shape.
+     this.el.emit("controls-enabled");
+     if (this.data.proxy) {
+       this.data.proxy.emit("controls-enabled");
+     }
    },
 
    onDefocus: function () {
      console.log("Defocussing " + this.el.id);
      this.removeEventListeners();
      this.infocus = false;
+
+     // Also relay events to disable controls on shape.
+     this.el.emit("controls-disabled");
+     if (this.data.proxy) {
+       this.data.proxy.emit("controls-disabled");
+     }
    },
 
    remove: function () {
@@ -1305,7 +1329,15 @@ AFRAME.registerComponent('falling', {
        var justLanded = false;
 
        // speed is modified based on the "drop" state.
-       var interval = this.el.is("drop") ? this.interval / 10 : this.interval;
+       // (but only when the game is in focus - otherwise we don't want controls
+       // to apply to this game).
+       if (this.infocus) {
+         var interval = this.el.is("drop") ? this.interval / 10 : this.interval;
+       }
+       else
+       {
+         var interval = this.interval;
+       }
 
        if (CONTINUOUS) {
          // Continuous movement.
