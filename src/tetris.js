@@ -393,7 +393,7 @@ AFRAME.registerComponent('shapegenerator', {
        this.shapeModels.push(shapeData);
      });
 
-     // Now we have processed the shapes, set one up as our "Next shape".     
+     // Now we have processed the shapes, set one up as our "Next shape".
      this.nextShapeChoice = this.selectRandomShape();
    },
 
@@ -456,9 +456,12 @@ AFRAME.registerComponent('shapegenerator', {
 
     // Push a copy of block data into shape data.
     shapeData.push(blockData.map((x) => x));
-    var xTotal = 0;
-    var yTotal = 0;
-    var zTotal = 0;
+    var xMin = 0;
+    var xMax = 0;
+    var yMin = 0;
+    var yMax = 0;
+    var zMin = 0;
+    var zMax = 0;
 
     for (var ii = 0; ii < compassString.length; ii++) {
 
@@ -504,11 +507,13 @@ AFRAME.registerComponent('shapegenerator', {
         console.log(`Adding block data: x: ${blockData[0]}, y: ${blockData[1]}, z: ${blockData[2]}`)
         shapeData.push(blockData.map((x) => x));
 
-        /* Keep a running total of the positions, used for centering later */
-        xTotal += blockData[0]
-        yTotal += blockData[1]
-        zTotal += blockData[2]
-
+        /* Keep track of the shape boundaries, used for centering later */
+        xMax = Math.max(blockData[0], xMax);
+        xMin = Math.min(blockData[0], xMin);
+        yMax = Math.max(blockData[1], yMax);
+        yMin = Math.min(blockData[1], yMin);
+        zMax = Math.max(blockData[2], zMax);
+        zMin = Math.min(blockData[2], zMin);
       }
     }
 
@@ -517,15 +522,15 @@ AFRAME.registerComponent('shapegenerator', {
        half-block (which can lead to non-aligned rotations), and then snap
        back to the grid after rotation. */
 
-    var xShift = Math.round(xTotal/shapeData.length * 2)/2;
-    var yShift = Math.round(yTotal/shapeData.length * 2)/2;
-    var zShift = Math.round(zTotal/shapeData.length * 2)/2;
-    /* We had also experimented with completely natural centers of rotation
-    No string argument against this, but it does seem to increase the potential
-    range of scenarios to consider...
-    var xShift = xTotal/shapeData.length;
-    var yShift = yTotal/shapeData.length;
-    var zShift = zTotal/shapeData.length;*/
+    /* Note that we center to the center of a bounding box, rather than an
+       approximate center of mass.  This ensures that e.g. a shape that is
+       bounded within a 2 x 2 x 2 space rotates about the center of that space,
+       which maximizes the chance of being able to rotate even when at an edge
+       or corner of the arena. */
+
+    var xShift = Math.round(xMax + xMin)/2;
+    var yShift = Math.round(yMax + yMin)/2;
+    var zShift = Math.round(zMax + zMin)/2;
 
     console.log(`Recentering.  Shift by x:${xShift}, y: ${yShift}, z: ${zShift}`)
     shapeData.forEach((item, index) => {
