@@ -1,4 +1,4 @@
-  /*
+/*
 tetrisgame is overall game controller.
 
 shapegenerator issues "shape-generated" event.
@@ -22,7 +22,9 @@ AFRAME.registerComponent('tetrisgame', {
     focus:         {type: 'boolean', default: true},
     levelduration: {type: 'number', default: 60},
     levelspeedup: {type: 'number', default: 10},
-    initialspeed: {type: 'number', default: 1000}
+    initialspeed: {type: 'number', default: 1000},
+    tutorial: {type: 'boolean', default: false},
+    tutorialentity: {type: 'selector', default: "#tutorial"}
   },
 
   // This caused problems (leads to shapegenerator init/update being calles with default values)
@@ -104,13 +106,20 @@ AFRAME.registerComponent('tetrisgame', {
 
   shapeLanded: function() {
     // When one shape lands, we generate the next.
+    // Exception is tutorial mode, where we simply hand control back to the
+    // tutorial entity to drive next steps.
     console.log("Landed event detected: arena: " + this.arena.id);
     console.log("Create another shape from generator: " + this.generator.id);
 
-    if (!this._arena.arenaFullIndicator) {
-      this._generator.generateShape(this.focus);
+    if (!this.data.tutorial) {
+      if (!this._arena.arenaFullIndicator) {
+        this._generator.generateShape(this.focus);
+      }
     }
-
+    else
+    {
+      this.data.tutorialentity.emit("nextStep")
+    }
   },
 
   startGame: function() {
@@ -148,7 +157,15 @@ AFRAME.registerComponent('tetrisgame', {
 
       // All ready, now generate the first shape.
       // This will also delete any shape & associated proxy that was in-flight.
-      this._generator.generateShape(this.focus);
+      // (in tutorial mode, we leave this to the tutorial to trigger...)
+
+      if (!this.data.tutorial) {
+        this._generator.generateShape(this.focus);
+      }
+      else
+      {
+        this.data.tutorialentity.emit("nextStep");
+      }
     }
   },
 
@@ -287,6 +304,7 @@ AFRAME.registerComponent('shapegenerator', {
     globalmixin:    {type: 'string', default: "cube"},
     pershapemixin:  {type: 'string', default: ""},
     arenapershapemixin:  {type: 'string', default: ""},
+    tutorial: {type: 'boolean', default: false},
     debug:          {type: 'boolean', default: false},
     logger1:        {type: 'string', default: "#log-panel1"},
     logger2:        {type: 'string', default: "#log-panel2"}
@@ -375,7 +393,7 @@ AFRAME.registerComponent('shapegenerator', {
        this.shapeModels.push(shapeData);
      });
 
-     // Now we have processed the shapes, set one up as our "Next shape".
+     // Now we have processed the shapes, set one up as our "Next shape".     
      this.nextShapeChoice = this.selectRandomShape();
    },
 
@@ -590,7 +608,7 @@ AFRAME.registerComponent('shapegenerator', {
         proxyString = `;proxy:#${targetId}`;
       }
 
-      entityEl.setAttribute('falling', `interval:${this.speed}; arena:#${this.data.arena.id};infocus:${inFocus}${arenaMixinString}${proxyString}`);
+      entityEl.setAttribute('falling', `interval:${this.speed}; arena:#${this.data.arena.id};infocus:${inFocus}${arenaMixinString}${proxyString};tutorial:${this.data.tutorial}`);
 
       if ((this.moveControls.thumbstick !== "") ||
           (this.rotateControls.thumbstick !== "")) {
@@ -750,7 +768,8 @@ AFRAME.registerComponent('falling', {
      shapeindex: {type: 'string'},
      infocus: {type: 'boolean', default: true},
      arenamixin: {type: 'string', default: ""},
-     proxy: {type: 'selector', default: ""}
+     proxy: {type: 'selector', default: ""},
+     tutorial: {type: 'boolean', default: false},
    },
 
    init: function () {
@@ -1313,6 +1332,13 @@ AFRAME.registerComponent('falling', {
      // Check whether we crossed over a time boundary.
      //console.log("CLOCK: Tick called");
 
+     if ((this.data.tutorial) && (!this.el.is("drop"))) {
+        // In tutorial, blocks only fall or land, if they are being explicitly
+        // dropped.
+
+        return;
+      }
+
      // We are assuming tick won't be called while we are
      // testing out a new position.
      //console.log(!this.testingNewPosition);
@@ -1392,11 +1418,6 @@ AFRAME.registerComponent('falling', {
            this._arena.arenaFull();
          }
 
-         // Processing for mainline case: piece landed.
-         this.landed = true;
-         console.log("Landed: Emitting Event.");
-         this.el.emit('landed');
-
          // Deactivate controls for this shape.
          // Unecessary as we're about to destroy the object anyway.
          //this.el.setAttribute('key-bindings', `debug:true;bindings:none`);
@@ -1415,6 +1436,13 @@ AFRAME.registerComponent('falling', {
          // new shape spawing), it's no big deal, as it is identical in
          // appearance to the blocks that replace it.  There will just be 2
          // identical objects and nobody will notice.
+
+         // Record that the piece has landed, and signal this to the game engine.
+         // It's important (esp. for tutorial cases) that this happens *after*
+         // the shape has been integrated into the arena.
+         this.landed = true;
+         console.log("Landed: Emitting Event.");
+         this.el.emit('landed');
        }
      }
    },

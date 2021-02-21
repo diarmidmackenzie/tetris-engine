@@ -129,6 +129,8 @@ A very simple component, configured with the following properties:
 - levelduration: How long, in seconds, before moving up to the next level (which increases block speed).  Default: 60 seconds.
 - initialspeed: How long, in msecs, it takes for a block to fall one space, at the start of the game.  Lower values indicate faster falling.  Default 1000.
 - levelspeedup: A percentage increase applied to the speed on each level.  This percentage is deducted from the time taken to fall one block, each time the level is increased.  Default 10 - which results in the speed doubling every 6-7 levels (i.e. every 6-7 minutes with the default settings).
+- tutorial: Defaults to false.  Set to true if you want to use the game engine to build a tutorial on how to play.  When this is set, shapes do not fall by default (unless explicitly dropped), and new shapes are not generated automatically - instead a "nextStep" event is emitted to a configurable entity, which can control what happens next.
+- tutorialentity: Only used when "tutorial" is set to true.  A selector for the entity on which the "nextStep" event should be emitted, as per previous property.
 
 The game is started, or restarted, by generating the event "start" on the entity on which tetrisgame is configured.  This can be set in HTML using the latest key-bindings.js (see above), for example by setting this property, which sets the Backspace Key, and A button controller on the right hand, to start controls.
 
@@ -171,6 +173,8 @@ The properties that can be set on this component are:
 - pershapemixin: (default: "") the prefix of a set of mixin names to be applied to the blocks.  There should be a set of mixins with names of the form: <pershapemixin><number>, where number starts at 0 and goes up.  There should be enough mixins to cover the number of different shape types  configured under "shapes".  Mixins will be assigned to shapes in order.  This mixin should include geometry, scale and material information.  When this is specified, the "globalmixin" setting is also applied to the shape, but no color is added other than what is specified in the mixin.
 
 - arenaperhapemixin: (default: "") this operates exactly like peshapemixin (i.e. it is a prefix of a set of numbered mixins starting from 0), but it applies at the point the block lands in the arena.  This allows for landed blocks to have a different appearance from in-flight blocks.  It can also be a good way to apply other changes to blocks as they land, for example making them become members of an Instanced Mesh, which can help significantly with performance. (see diarmidmackenzie/instanced-mesh/ and diarmidmackenzie/tetrisland/ for more details and examples).  Note that arenapershapemixin completely overrides both globalmixin and pershapemixin, for shapes once they have landed.
+
+- tutorial: Similar to the same parameter on the tetris-game component.  Shapes do not fall unless explicitly dropped.
 
 - debug: Set "debug:true" on either to enable detailed console logging, and real-time data output to logger elements.
 
