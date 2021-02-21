@@ -606,7 +606,7 @@ AFRAME.registerComponent('shapegenerator', {
       entityEl.setAttribute('key-bindings', `debug:true;bindings:${this.data.keys}`);
 
       // Required controller config can be either or both of
-      // sixdof-object-control, and thumstick-object-control.
+      // sixdof-object-control, and thumbstick-object-control.
       var proxyString = "";
       if (this.sixdofController !== "") {
         entityEl.setAttribute('sixdof-object-control', `proxy:#${targetId};movement:events;posgrid:relative;${this.debugString};${this.logger1String}`);
@@ -622,6 +622,9 @@ AFRAME.registerComponent('shapegenerator', {
                                movestick:${this.moveControls.thumbstick};
                                rotatestick:${this.rotateControls.thumbstick};
                                moverepeattime:100;
+                               singleaxis:true;
+                               keepremainder:false;
+                               axes:XZ;
                                ${disabledString}`);
       }
     }
