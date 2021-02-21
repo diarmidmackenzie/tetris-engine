@@ -1189,9 +1189,11 @@ AFRAME.registerComponent('falling', {
 
      // Get Absolute new rotation as a quaternion, by multiplying
      // current rotation by this delta.
+     // Quaternions are applied R to L, so the latest movement should be the
+     // first term (this has been confirmed in testing too!)
      var quaternionAbsolute = new THREE.Quaternion();
-     quaternionAbsolute.multiplyQuaternions(this.el.object3D.quaternion,
-                                            quaternionDelta);
+     quaternionAbsolute.multiplyQuaternions(quaternionDelta,
+                                            this.el.object3D.quaternion);
 
      // To determine whether we can rotate the shape, we just do the rotation,
      // then check if the position is viable.
