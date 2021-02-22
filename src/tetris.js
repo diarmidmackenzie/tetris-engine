@@ -423,7 +423,7 @@ AFRAME.registerComponent('shapegenerator', {
           }
           this.sixdofController = config[0];
 
-          if ((controlsData.sixdof !== "") &&
+          if ((controlsData.sixdof !== "none") &&
               (controlsData.sixdof !== config[1])) {
             controlsData.sixdof = "either";
           }
