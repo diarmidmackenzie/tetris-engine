@@ -1548,6 +1548,14 @@ AFRAME.registerComponent('arena', {
 
   update: function () {
 
+    // Changing X & Z dimentions after creation is in general not recommended,
+    // and risks causing all sorts of problems.
+    // However it can work if the arena is clear at the time.
+    // This can be useful for demonstrating both 2D and 3D modes in a single
+    // system, as part of a Tutorial.
+    this.width = this.data.x;
+    this.depth = this.data.z;
+
     // Set up layer/line deletion config.
     switch (this.data.clear) {
       case "layer":
