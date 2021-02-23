@@ -806,11 +806,21 @@ AFRAME.registerComponent('falling', {
      this.startHeight = this.el.object3D.position.y;
      this.infocus = this.data.infocus;
 
-     // used for checkign rotations vs. axes.
+     // used for checking rotations.
      this.rotationEuler = new THREE.Euler();
      this.xRotLocked = (this.data.rotateaxes.search("X") == -1);
      this.yRotLocked = (this.data.rotateaxes.search("Y") == -1);
      this.zRotLocked = (this.data.rotateaxes.search("Z") == -1);
+
+     // used for other bits of workings on rotations & movements.
+     this.oldQuaternion = new THREE.Quaternion();
+     this.oldPosition = new THREE.Vector3();
+     this.arenaPosition = new THREE.Vector3()
+     this.worldPosition = new THREE.Vector3();
+     this.newPosition = new THREE.Vector3();
+     this.eulerDelta = new THREE.Euler();
+     this.quaternionDelta = new THREE.Quaternion();
+     this.quaternionAbsolute = new THREE.Quaternion();
 
      // watch for race conditions.
      this.testingNewPosition = false;
@@ -832,11 +842,6 @@ AFRAME.registerComponent('falling', {
        focus: this.onFocus.bind(this),
        defocus: this.onDefocus.bind(this)
      };
-
-     // Save off a couple of vectors for the shape that we use to be more
-     // generous about allowing rotations along the longest axis when close
-     // to an edge.
-     this.setSaveRotationVectors();
 
      // Add a micro adjustment > than any FP maths inaccuracies,
      // to take away any ambiguities that might arise from block positions
@@ -861,7 +866,7 @@ AFRAME.registerComponent('falling', {
         We apply the re-alignment at the parent shape, not the block. */
 
      // Get arena position of the first child block.
-     var arenaPosition = new THREE.Vector3();
+     var arenaPosition = this.arenaPosition;
      const firstChild  = Array.from(this.el.childNodes)[0];
      if (firstChild) {
        firstChild.object3D.getWorldPosition(arenaPosition);
@@ -929,56 +934,6 @@ AFRAME.registerComponent('falling', {
 
    pause: function () {
      this.removeEventListeners();
-   },
-
-   setSaveRotationVectors: function() {
-
-    this.saveRotationVector1 = new THREE.Vector3(0, 0, 0);
-    this.saveRotationVector2 = new THREE.Vector3(0, 0, 0);
-
-     // Loop through each sub-component in the shape to figure out the
-     // longest dimension.
-     var childrenArray = Array.from(this.el.childNodes);
-     var xMin = 1;
-     var xMax = -1;
-     var yMin = 1;
-     var yMax = -1;
-     var zMin = 1;
-     var zMax = -1;
-
-     for (ii = 0; ii < childrenArray.length; ii++) {
-       // Determine range of x, y & z in this shape
-       // (in default orientation).
-       var xPos = childrenArray[ii].object3D.position.x;
-       var yPos = childrenArray[ii].object3D.position.y;
-       var zPos = childrenArray[ii].object3D.position.z;
-
-       xMin = (xPos < xMin) ? xPos : xMin
-       xMax = (xPos > xMax) ? xPos : xMax
-       yMin = (yPos < yMin) ? yPos : yMin
-       yMax = (yPos > yMax) ? yPos : yMax
-       zMin = (zPos < zMin) ? zPos : zMin
-       zMax = (zPos > zMax) ? zPos : zMax
-     }
-
-     if ((xMax - xMin > yMax - yMin) &&
-         (xMax - xMin > zMax - zMin)) {
-        // x is longest dimension
-        this.saveRotationVector1.set(GRID_UNIT, 0, 0)
-        this.saveRotationVector2.set(-GRID_UNIT, 0, 0)
-      }
-      else if ((yMax - yMin > xMax - xMin) &&
-               (yMax - yMin > zMax - zMin)) {
-        // y is the longest dimension
-        this.saveRotationVector1.set(0, GRID_UNIT, 0)
-        this.saveRotationVector2.set(0, -GRID_UNIT, 0)
-      }
-      else if ((zMax - zMin > xMax - xMin) &&
-               (zMax - zMin > yMax - yMin)) {
-        // z is the longest dimension
-        this.saveRotationVector1.set(0, 0, GRID_UNIT)
-        this.saveRotationVector2.set(0, 0, -GRID_UNIT)
-      }
    },
 
    onFocus: function () {
@@ -1107,7 +1062,7 @@ AFRAME.registerComponent('falling', {
    // returns true if moved, false otherwise.
    moveRelative: function(xMove, yMove, zMove) {
 
-     var newPosition = new THREE.Vector3();
+     var newPosition = this.newPosition;
      newPosition.copy(this.el.object3D.position);
      newPosition.x += xMove;
      newPosition.y += yMove;
@@ -1131,8 +1086,7 @@ AFRAME.registerComponent('falling', {
    // Mimor errors in FP maths mean that sometimes quaternion values might
    // not be *exactly* zero.  Thumstick controls in particular seem to exhibit
    // this problem.  So we treate values close to zero as if they were zero.
-   rotationOnLegalAxes(quaternion) {
-     this.rotationEuler.setFromQuaternion(quaternion);
+   rotationOnLegalAxes: function(quaternion) {
 
      if (this.xRotLocked && Math.abs(this.rotationEuler.x) > 0.0001) {
        console.log("Blocking non-zero X axis rotation")
@@ -1157,14 +1111,15 @@ AFRAME.registerComponent('falling', {
      TETRISlogQuat("Trying to rotate shape to:", quaternion, 1, true);
 
      //Initial filter: does rotation affect non-permitted axes?
+     this.rotationEuler.setFromQuaternion(quaternion);
      if (!this.rotationOnLegalAxes(quaternion)) {
        return(false);
      }
 
      // Before we rotate, save off the old quaternion & position.
-     var oldQuaternion = new THREE.Quaternion();
+     oldQuaternion = this.oldQuaternion;
+     oldPosition = this.oldPosition;    
      oldQuaternion.copy(this.el.object3D.quaternion);
-     var oldPosition = new THREE.Vector3();
      oldPosition.copy(this.el.object3D.position);
      var undo = false;
 
@@ -1178,6 +1133,7 @@ AFRAME.registerComponent('falling', {
      this.testingNewPosition = true;
      this.el.object3D.quaternion.copy(quaternion);
      // Rotation may have misaligned blocks from grid, so snap back.
+     var preSnapPosition = this.el.object3D.position.clone();
      this.snapToGridXZ();
 
      console.log("post-rotation");
@@ -1192,38 +1148,19 @@ AFRAME.registerComponent('falling', {
        rotated = true;
      }
      else {
-       // There is a case we want to allow for, where we enable a small translation
-       // to enable the rotation.
-       // But only when a move of +/-1 along the shape's longest dimension
-       // would be enough to enable the rotation.
-       // Vectors to check are the base "save rotation vectors" set up when
-       // we initialize the shape, with the rotation quaternion applied to them.
-       undo = true;
-       var srv1 = this.saveRotationVector1.clone();
-       srv1.applyQuaternion(quaternion);
-       logXYZ("SRV1", srv1, 16, true);
-       var srv2 = this.saveRotationVector2.clone();
-       srv2.applyQuaternion(quaternion);
-       logXYZ("SRV2", srv2, 16, true);
-
-       if (this.canShapeMoveHere(this.el, srv1)) {
-         console.log("applied SRV1")
-         this.el.object3D.position.add(srv1);
-         this.snapToGridXZ();
-         // Double check shape can move here after snapping to position.
-         if (this.canShapeMoveHere(this.el, {'x': 0, 'y': 0, 'z': 0})) {
-           undo = false;
-         }
-       }
-       else if (this.canShapeMoveHere(this.el, srv2)) {
-         console.log("applied SRV2")
-         this.el.object3D.position.add(srv2);
-         this.snapToGridXZ();
-         // Double check shape can move here after snapping to position.
-         if (this.canShapeMoveHere(this.el, {'x': 0, 'y': 0, 'z': 0})) {
-           undo = false;
-         }
-       }
+       // The problem with snap to grid is that it sometimes makes decisions
+       // at boundaries.
+       // If the shape was just the other side of a boundary we'd have had a different
+       // outcome.  That leads to behaviour that can be puzzling for a player
+       // where movements are allowed, or not allowed, seemingly arbitrarily.
+       //
+       // TO address this issue, if one of these other outcomes would have given
+       // us a viable rotation, we should allow that rotation instead.
+       //
+       // We can identify other possibilities by adding/subtracting 0.001 from X
+       // and Z, repeating the snap, and seeing if we get a different answer.
+       var success = this.testAlternateSnapOutcomes(preSnapPosition)
+       undo = (!success);
 
        if (undo) {
          // Undo the rotation.
@@ -1240,26 +1177,60 @@ AFRAME.registerComponent('falling', {
      return(rotated);
    },
 
+   testAlternateSnapOutcomes: function(preSnapPosition) {
+
+     if (this.testAlternateSnapOutcome(preSnapPosition, 0.001, 0)) {
+       return (true);
+     }
+     if (this.testAlternateSnapOutcome(preSnapPosition, -0.001, 0)) {
+       return (true);
+     }
+     if (this.testAlternateSnapOutcome(preSnapPosition, 0, 0.001)) {
+       return (true);
+     }
+     if (this.testAlternateSnapOutcome(preSnapPosition, 0, -0.001)) {
+       return (true);
+     }
+
+     return(false);
+   },
+
+   testAlternateSnapOutcome: function(preSnapPosition, xDelta, zDelta) {
+     var success = false;
+     this.el.object3D.position.copy(preSnapPosition);
+     this.el.object3D.position.x += xDelta;
+     this.el.object3D.position.z += zDelta;
+     this.snapToGridXZ();
+     if (this.canShapeMoveHere(this.el, {'x': 0, 'y': 0, 'z': 0})) {
+       success = true;
+     }
+     else
+     {
+       success = false;
+     }
+
+     return(success);
+   },
+
    rotateRelative: function(xRad, yRad, zRad) {
      console.log("Trying to rotate shape")
 
      // to compose rotations reliably, we use Quaternion arithmetic.
-     var eulerDelta = new THREE.Euler(xRad, yRad, zRad);
-     var quaternionDelta = new THREE.Quaternion();
-     quaternionDelta.setFromEuler(eulerDelta);
+     this.eulerDelta.set(xRad, yRad, zRad);
+     this.quaternionDelta.setFromEuler(this.eulerDelta);
 
      // Get Absolute new rotation as a quaternion, by multiplying
      // current rotation by this delta.
      // Quaternions are applied R to L, so the latest movement should be the
      // first term (this has been confirmed in testing too!)
-     var quaternionAbsolute = new THREE.Quaternion();
-     quaternionAbsolute.multiplyQuaternions(quaternionDelta,
+
+     this.quaternionAbsolute.multiplyQuaternions(this.quaternionDelta,
                                             this.el.object3D.quaternion);
 
      // To determine whether we can rotate the shape, we just do the rotation,
      // then check if the position is viable.
      // If not, we can undo before any rendering takes place.
-     rotated = this.rotateAbsolute(quaternionAbsolute)
+     const rotated = this.rotateAbsolute(this.quaternionAbsolute)
 
      return(rotated);
    },
@@ -1319,8 +1290,8 @@ AFRAME.registerComponent('falling', {
    canShapeMoveHere: function (element, moveVector) {
 
      var canMove = true;
-     var worldPosition = new THREE.Vector3();
-     var arenaPosition = new THREE.Vector3();
+     var worldPosition = this.worldPosition;
+     var arenaPosition = this.arenaPosition;
 
      // Loop through each sub-component in the shape.  If any one can't move, the
      // whole thing can't fall.
@@ -1363,8 +1334,8 @@ AFRAME.registerComponent('falling', {
    // Identify bugs quickly by consistency-checking various aspects of the shape
    verifyShape: function () {
 
-     var worldPosition = new THREE.Vector3();
-     var arenaPosition = new THREE.Vector3();
+     var worldPosition = this.worldPosition;
+     var arenaPosition = this.arenaPosition;
      var childrenArray = Array.from(this.el.childNodes);
      var roundedX;
      var roundedZ;
@@ -1586,6 +1557,7 @@ AFRAME.registerComponent('arena', {
     this.arenaFullIndicator = false;
     this.checkLinesAgain = false;
     this.nextBlockId = 0;
+    this.arenaPosition = new THREE.Vector3();
 
     // Falling blocks are tracked by the center of the block.
     // The cornerOffset is the offset between the arena "position"
@@ -1708,7 +1680,7 @@ AFRAME.registerComponent('arena', {
 
     for (blockIx = 0; blockIx < blockList.length; blockIx++) {
 
-      var arenaPosition = new THREE.Vector3();
+      var arenaPosition = this.arenaPosition;
       // Query will include the falling block.
       // Should Ignore these Not yet written code to do this..
 
@@ -1816,7 +1788,7 @@ AFRAME.registerComponent('arena', {
 
     // Block is a child of the shape, and therefore position is in shape space.
     // Translate it into arena space via world space.
-    var arenaPosition = new THREE.Vector3();
+    var arenaPosition = this.arenaPosition;
     blockElement.object3D.getWorldPosition(arenaPosition);
     this.el.object3D.worldToLocal(arenaPosition)
 
