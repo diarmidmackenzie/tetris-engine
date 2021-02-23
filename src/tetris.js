@@ -303,6 +303,7 @@ AFRAME.registerComponent('shapegenerator', {
                                                  #rhand.abuttonup=%%drop`]},
     movecontrol:    {type: 'array', default: ["#lhand.thumbstick","#rhand.grip"]},
     rotatecontrol:  {type: 'array', default: ["#lhand.thumbstick","#rhand.trigger"]},
+    rotateaxes:     {type: 'string', default: "XYZ"},
     speed:          {type: 'number', default: 1000},
     nextshape:      {type: 'selector'},
     globalmixin:    {type: 'string', default: "cube"},
@@ -617,7 +618,13 @@ AFRAME.registerComponent('shapegenerator', {
         proxyString = `;proxy:#${targetId}`;
       }
 
-      entityEl.setAttribute('falling', `interval:${this.speed}; arena:#${this.data.arena.id};infocus:${inFocus}${arenaMixinString}${proxyString};tutorial:${this.data.tutorial}`);
+      entityEl.setAttribute('falling', `interval:${this.speed};
+                                        arena:#${this.data.arena.id};
+                                        infocus:${inFocus}
+                                        ${arenaMixinString}
+                                        ${proxyString};
+                                        tutorial:${this.data.tutorial};
+                                        rotateaxes:${this.data.rotateaxes}`);
 
       if ((this.moveControls.thumbstick !== "") ||
           (this.rotateControls.thumbstick !== "")) {
@@ -787,6 +794,7 @@ AFRAME.registerComponent('falling', {
      infocus: {type: 'boolean', default: true},
      arenamixin: {type: 'string', default: ""},
      proxy: {type: 'selector', default: ""},
+     rotateaxes:     {type: 'string', default: "XYZ"},
      tutorial: {type: 'boolean', default: false},
    },
 
@@ -797,6 +805,12 @@ AFRAME.registerComponent('falling', {
      this.interval = this.data.interval;
      this.startHeight = this.el.object3D.position.y;
      this.infocus = this.data.infocus;
+
+     // used for checkign rotations vs. axes.
+     this.rotationEuler = new THREE.Euler();
+     this.xRotLocked = (this.data.rotateaxes.search("X") == -1);
+     this.yRotLocked = (this.data.rotateaxes.search("Y") == -1);
+     this.zRotLocked = (this.data.rotateaxes.search("Z") == -1);
 
      // watch for race conditions.
      this.testingNewPosition = false;
@@ -1114,9 +1128,38 @@ AFRAME.registerComponent('falling', {
      this.rotateAbsolute(event.detail);
    },
 
+   // Mimor errors in FP maths mean that sometimes quaternion values might
+   // not be *exactly* zero.  Thumstick controls in particular seem to exhibit
+   // this problem.  So we treate values close to zero as if they were zero.
+   rotationOnLegalAxes(quaternion) {
+     this.rotationEuler.setFromQuaternion(quaternion);
+
+     if (this.xRotLocked && Math.abs(this.rotationEuler.x) > 0.0001) {
+       console.log("Blocking non-zero X axis rotation")
+       return (false);
+     };
+
+     if (this.yRotLocked && Math.abs(this.rotationEuler.y) > 0.0001) {
+       console.log("Blocking non-zero Y axis rotation")
+       return (false);
+     };
+
+     if (this.zRotLocked && Math.abs(this.rotationEuler.z) > 0.0001) {
+       console.log("Blocking non-zero Z axis rotation")
+       return (false);
+     };
+
+     return(true);
+   },
+
    rotateAbsolute: function(quaternion) {
 
      TETRISlogQuat("Trying to rotate shape to:", quaternion, 1, true);
+
+     //Initial filter: does rotation affect non-permitted axes?
+     if (!this.rotationOnLegalAxes(quaternion)) {
+       return(false);
+     }
 
      // Before we rotate, save off the old quaternion & position.
      var oldQuaternion = new THREE.Quaternion();
