@@ -182,6 +182,10 @@ AFRAME.registerComponent('tetrisgame', {
 
   onArenaFull: function(event) {
     console.log("Game Over")
+
+    // Since game is over, next shape is no longer relevant, so delete it.
+    this._generator.deleteNextShape()
+
     this.gameOver = true;
     this.el.emit("game-over",
                  {score: this.score,
@@ -675,6 +679,12 @@ AFRAME.registerComponent('shapegenerator', {
                                         this.shapeModels[modelChoice][ii][2] * GRID_UNIT);
       entityEl.appendChild(blockEntity);
     }
+  },
+
+  deleteNextShape: function () {
+    const nextShapeClass = "nextShape" + this.el.id;
+    this.deleteAllObjectsWithClass(nextShapeClass);
+
   },
 
   generateShape: function(inFocus) {
