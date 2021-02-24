@@ -6,10 +6,10 @@
 <html>
   <head>
     <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
-    <script src="https://unpkg.com/aframe-event-set-component@4.2.1/dist/aframe-event-set-component.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@latest/key-bindings.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.1-alpha/src/6dof-object-control.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@latest/src/keyboard-hand-controls.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@v0.3-alpha/key-bindings.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/6dof-object-control.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/keyboard-hand-controls.min.js"></script>
     <script src="../src/tetris.js"></script>
   </head>
   <body>
@@ -24,7 +24,7 @@
       </a-mixin>
 
       <!-- Generic instructions-->
-      <a-text position="-2 -1 -5" color="black" value="Focus: 1=game1, 2=game2right, 3=both, 4=neither
+      <a-text position="-2 -1 -5" color="black" value="Focus: 1=game1, 2=game2, 3=both, 4=neither
                                                       Enter to start (when not in game)
                                                       Controls:Z & X to move block.  Space to drop.
                                                       Controls should impact a game if and only if
@@ -68,7 +68,7 @@
             <a-entity id='shapegenerator2' shapegenerator="shapes:N;
                                                           keys:KeyZ=xminus,
                                                           KeyX=xplus,
-                                                          Space=drop;
+                                                          Space=$drop;
                                                           arena:#arena2"
                                                           position="1 1.6 -1"></a-entity>
             <a-entity id="game2" tetrisgame="focus:false;arena:#arena2;generator:#shapegenerator2;;scoreboard:#scoreboard2;focus:false"
