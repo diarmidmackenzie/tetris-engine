@@ -7,7 +7,7 @@
   <head>
     <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@v0.3-alpha/key-bindings.min.js"></script>
-    <script src="../src/tetris.js"></script>
+    <script src="../src/blocks.js"></script>
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
@@ -23,43 +23,43 @@
 
       <!-- A separate "game" for each of the different shapes-->
       <a-entity id='shape-gen1' shapegenerator="arena: #arena1; shapes:EEE" position = "-1 0.05 -1"></a-entity>
-      <a-entity tetrisgame="arena: #arena1; generator: #shape-gen1; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
+      <a-entity blocksgame="arena: #arena1; generator: #shape-gen1; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
       <a-entity id="arena1" arena="x: 4; z: 4" position = "-1 0 -1" color=red>
          <a-plane height="0.4" width="0.4" rotation="-90 0 0" color=red position="0.05 0 0.05"></a-plane>
       </a-entity>
 
       <a-entity id='shape-gen2' shapegenerator="arena: #arena2; shapes:EEN" position = "0 0.05 -1"></a-entity>
-      <a-entity tetrisgame="arena: #arena2; generator: #shape-gen2; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
+      <a-entity blocksgame="arena: #arena2; generator: #shape-gen2; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
       <a-entity id="arena2" arena="x: 4; z: 4" position = "0 0 -1" color=red>
          <a-plane height="0.4" width="0.4" rotation="-90 0 0" color=red position="0.05 0 0.05"></a-plane>
       </a-entity>
 
       <a-entity id='shape-gen3' shapegenerator="arena: #arena3; shapes:EES" position = "1 0.05 -1"></a-entity>
-      <a-entity tetrisgame="arena: #arena3; generator: #shape-gen3; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
+      <a-entity blocksgame="arena: #arena3; generator: #shape-gen3; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
       <a-entity id="arena3" arena="x: 4; z: 4" position = "1 0 -1" color=red>
          <a-plane height="0.4" width="0.4" rotation="-90 0 0" color=red position="0.05 0 0.05"></a-plane>
       </a-entity>
 
       <a-entity id='shape-gen4' shapegenerator="arena: #arena4; shapes:ESE" position = "-1 0.05 0"></a-entity>
-      <a-entity tetrisgame="arena: #arena4; generator: #shape-gen4; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
+      <a-entity blocksgame="arena: #arena4; generator: #shape-gen4; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
       <a-entity id="arena4" arena="x: 4; z: 4" position = "-1 0 0" color=red>
          <a-plane height="0.4" width="0.4" rotation="-90 0 0" color=red position="0.05 0 0.05"></a-plane>
       </a-entity>
 
       <a-entity id='shape-gen5' shapegenerator="arena: #arena5; shapes:ENE" position = "0 0.05 0"></a-entity>
-      <a-entity tetrisgame="arena: #arena5; generator: #shape-gen5; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
+      <a-entity blocksgame="arena: #arena5; generator: #shape-gen5; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
       <a-entity id="arena5" arena="x: 4; z: 4" position = "0 0 0" color=red>
          <a-plane height="0.4" width="0.4" rotation="-90 0 0" color=red position="0.05 0 0.05"></a-plane>
       </a-entity>
 
       <a-entity id='shape-gen6' shapegenerator="arena: #arena6; shapes:ESW" position = "1 0.05 0"></a-entity>
-      <a-entity tetrisgame="arena: #arena6; generator: #shape-gen6; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
+      <a-entity blocksgame="arena: #arena6; generator: #shape-gen6; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
       <a-entity id="arena6" arena="x: 4; z: 4" position = "1 0 0" color=red>
          <a-plane height="0.4" width="0.4" rotation="-90 0 0" color=red position="0.05 0 0.05"></a-plane>
       </a-entity>
 
       <a-entity id='shape-gen7' shapegenerator="arena: #arena7; shapes:EEWS" position = "-1 0.05 1"></a-entity>
-      <a-entity tetrisgame="arena: #arena6; generator: #shape-gen7; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
+      <a-entity blocksgame="arena: #arena6; generator: #shape-gen7; scoreboard: #scoreboard;" key-bindings="bindings:Enter=start"></a-entity>
       <a-entity id="arena7" arena="x: 4; z: 4" position = "-1 0 1" color=red>
          <a-plane height="0.4" width="0.4" rotation="-90 0 0" color=red position="0.05 0 0.05"></a-plane>
       </a-entity>

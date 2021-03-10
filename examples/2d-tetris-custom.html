@@ -1,9 +1,9 @@
-<!-- A customized version of 2D Tetris.
+<!-- A customized version of 2D blocks.
      Customization options are a bit limited at the moment, but you can
      still do plenty with the environment, and arena.
 
      This customization is on the theme of "Space Balls!".  Comments focus on
-     customization.  See 2d-tetris.html for detailed explanations of other
+     customization.  See 2d-blocks.html for detailed explanations of other
      aspects of the HTML.
 
      It is set up with VR in mind. Keyboard controls still work
@@ -19,7 +19,7 @@
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/6dof-object-control.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/keyboard-hand-controls.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/thumbstick-object-control.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/tetris-engine@v0.3-alpha/src/tetris.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/blocks-engine@v0.3-alpha/src/blocks.min.js"></script>
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
@@ -36,12 +36,12 @@
 
 
       <!-- Use spheres rather than cubes
-           (leave id as "cube" because that's the keyword that tetris-engine
+           (leave id as "cube" because that's the keyword that blocks-engine
            is looking for.
            Note that "material" properties are not yet customizable, as the
            shapegenerator code currently overwites this with a hardcoded set of
            colors-->
-      <!-- Bug in tetris-engine v0.2 that this id has to be "cube" due to a bug
+      <!-- Bug in blocks-engine v0.2 that this id has to be "cube" due to a bug
           in "arena integration" code.  Will be fixed in next release.
           Also we'll fix the bug where textures get rotated back to initial
           position on block integration-->
@@ -81,7 +81,7 @@
                                                pershapemixin:planet"
                                               position = "0.0 2.3 -1"></a-entity>
       <a-box id="nextShapeContainer" material="transparent:true;opacity:0.3" position="-1 2.05 -1" height="0.5" width = "0.5" depth ="0.5"></a-box>
-      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Space=start,#rhand.abuttondown=start"></a-entity>
+      <a-entity blocksgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Space=start,#rhand.abuttondown=start"></a-entity>
 
       <!-- Arena does not need a plane, as the physical arena surfaces is provided
            by the box base (below)-->

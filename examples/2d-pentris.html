@@ -1,12 +1,12 @@
-<!-- A basic version of 2D Pentris to show the use of tetris-engine.
+<!-- A basic version of 2D 5-Blocks to show the use of blocks-engine.
 
      This is suitable for play in VR or on desktop.
 
-     What is Pentris?  It's just like Tetris, but the shapes are made up of 5
-     blocks.  It is quite a lot harder - but a good challenge for strong Tetris
+     What is 5-blocks?  It's just like 4-blocks, but the shapes are made up of 5
+     blocks.  It is quite a lot harder - but a good challenge for strong blocks
      players.
 
-     This config is almost identical to the basic 2D Tetris example.
+     This config is almost identical to the basic 2D blocks example.
      It just has a slightly larger arena (12 blocks rather than 10), and
      different config for the shape generator.
 -->
@@ -19,7 +19,7 @@
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/6dof-object-control.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/keyboard-hand-controls.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/thumbstick-object-control.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/tetris-engine@v0.3-alpha/src/tetris.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/blocks-engine@v0.3-alpha/src/blocks.min.js"></script>
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
@@ -59,7 +59,7 @@
        from the controller
        are absolute, not relative, and so will always be in line with the global
        grid.  Position arena appropriately to handle this -->
-      <!-- See tetris-engine README for explanation of the shape codes.
+      <!-- See blocks-engine README for explanation of the shape codes.
            These are all the shapes that can be formed out of 5 blocks.
            keys are hopefully self-explanatory-->
       <a-entity id='shape-gen' shapegenerator="shapes:EEEE,EEEU,EEED,EEUE,EEDE,EEUDE,EEDUE,EEDD,EEDW,EEUW,EEWDD,EDED,EDEWD,WDWED,EUDDUE,DEEU,DEED,UEEU;
@@ -74,10 +74,10 @@
                                               nextshape:#nextshape"
                                 position = "0 2.0 -1.0"></a-entity>
       <a-entity id='nextshape' position = "1 2.0 -1"></a-entity>
-      <!--There needs to be an entity with the tetrisgame component.-->
+      <!--There needs to be an entity with the blocksgame component.-->
       <!--Can probably double this up with another entity like the arena,
           scoreboard or shape generator.  But this is what I've tested so far-->
-      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Space=start,#rhand.abuttondown=start"></a-entity>
+      <a-entity blocksgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Space=start,#rhand.abuttondown=start"></a-entity>
 
       <!-- Putting the arena exactly below the dropper when the arena has
            an even number of spaces creates ambuiguous intent: not clear where
@@ -85,9 +85,9 @@
           So we are careful to set this a half-block (5cm) to the left of the dropper.
           This is exclusively done for even-width arenas. -->
       <!-- For this game we have a 12 x 1 arena.  Slightly larger than the 10 blocks
-           for Tetris, to give a bit more playing space-->
+           for blocks, to give a bit more playing space-->
       <!-- Note that the plane object is the one to rotate, *not* the arena.
-           From v0.3 of tetris-engine, the blocks will be stored in arena-space,
+           From v0.3 of blocks-engine, the blocks will be stored in arena-space,
            not world-space, and so the arena must not have rotation (unless you
            want the game to play horizontally rather than vertically!)-->
       <a-entity id="arena" arena="x: 12; z: 1" position = "0 0.5 -1" >

@@ -1,4 +1,4 @@
-<!-- Basic 2D Tetris with Instanced Mesh for Arena -->
+<!-- Basic 2D blocks with Instanced Mesh for Arena -->
 -->
 <html>
   <head>
@@ -7,8 +7,8 @@
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@v0.3-alpha/key-bindings.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/instanced-mesh@v0.2-alpha/src/instanced-mesh.min.js"></script>
-    <script src="../src/tetris.js"></script>
-    
+    <script src="../src/blocks.js"></script>
+
   </head>
   <body>
     <a-scene debug renderer="colorManagement:true">
@@ -62,7 +62,7 @@
                                               arenapershapemixin:arena-psm"
                                 position = "0.0 2.0 -1"></a-entity>
       <a-entity id='nextshape' position = "1 2.0 -1"></a-entity>
-      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Space=start,#rhand.abuttondown=start"></a-entity>
+      <a-entity blocksgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Space=start,#rhand.abuttondown=start"></a-entity>
 
       <a-entity id="arena" arena="x: 10; z: 1" position = "0 0.5 -1" >
         <a-entity id="arena-mesh" geometry="primitive: box;" shadow material="color:red" instanced-mesh="capacity:100;debug:true"></a-entity>

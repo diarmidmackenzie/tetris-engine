@@ -1,4 +1,4 @@
-<!-- A basic version of 3D Tetris for testing-->
+<!-- A basic version of 3D blocks for testing-->
 <!-- keyboard controls only, 2 x 2 grid, 2x1 blocks -->
 <!-- Two games side-by side, including testing of focus -->
 <!-- Includes event logging set up using event-set__ -->
@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@v0.3-alpha/key-bindings.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/6dof-object-control.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/keyboard-hand-controls.min.js"></script>
-    <script src="../src/tetris.js"></script>
+    <script src="../src/blocks.js"></script>
   </head>
   <body>
     <a-scene>
@@ -36,7 +36,7 @@
                                                     Space=$drop"
                                                     position = "-1 1.6 -1">
       </a-entity>
-      <a-entity id="game" tetrisgame="focus:true"
+      <a-entity id="game" blocksgame="focus:true"
                 key-bindings="debug:true;bindings:Enter=start,Digit1=focus,Digit2=defocus,Digit3=focus,Digit4=defocus"
                 event-set__start="_target:#game-events;_event: start; text.value:Start"
                 event-set__gameover="_target:#game-events;_event: game-over; text.value:Game Over"
@@ -71,7 +71,7 @@
                                                           Space=$drop;
                                                           arena:#arena2"
                                                           position="1 1.6 -1"></a-entity>
-            <a-entity id="game2" tetrisgame="focus:false;arena:#arena2;generator:#shapegenerator2;;scoreboard:#scoreboard2;focus:false"
+            <a-entity id="game2" blocksgame="focus:false;arena:#arena2;generator:#shapegenerator2;;scoreboard:#scoreboard2;focus:false"
                       key-bindings="debug:true;bindings:Enter=start,Digit1=defocus,Digit2=focus,Digit3=focus,Digit4=defocus"
                       event-set__start="_target:#game-events2;_event: start; text.value:Start"
                       event-set__gameover="_target:#game-events2;_event: game-over; text.value:Game Over"

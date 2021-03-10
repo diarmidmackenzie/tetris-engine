@@ -1,4 +1,4 @@
-<!-- 3D Tetris for testing.
+<!-- 3D 4-Blocks for testing.
      Uses a 4x4 board as this is most demanding in terms of risk of bugs.
      Off center, and set at a 45 degree angle, which seems to have been the source
      of minor deviations in FP calculations that can expose bugs.
@@ -11,7 +11,7 @@
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@v0.3-alpha/key-bindings.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/6dof-object-control.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/keyboard-hand-controls.min.js"></script>
-    <script src="../src/tetris.js"></script>
+    <script src="../src/blocks.js"></script>
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
@@ -44,7 +44,7 @@
                                                  nextshape:#nextshape"
                                   position = "0.0 2.0 0"></a-entity>
         <a-entity id='nextshape' position = "1 2.0 -1"></a-entity>
-        <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Space=start,#rhand.abuttondown=start"></a-entity>
+        <a-entity blocksgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Space=start,#rhand.abuttondown=start"></a-entity>
         <a-entity id="arena" arena="x: 4; z: 4" position = "0 0.5 0" >
           <a-plane shadow="receive:true" height="0.4" width="0.4" rotation="-90 0 0" position = "0.05 0 0.05"></a-plane>
         </a-entity>

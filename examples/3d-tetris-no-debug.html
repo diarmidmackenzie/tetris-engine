@@ -1,12 +1,12 @@
 <!-- This file is deprecated, now I have removed debug info from all the examples.
 
-     A version of 3D Tetris that removes all the debug information.
+     A version of 3D blocks that removes all the debug information.
      This also removed keyboard-hand-controls (which simulates a 6DoF controller
      using keyboard), as that is unusable without a logger panel.
     So this version is only navigable using native keyboard, or native 6DoF
 
     To save duplication of comments, this file includes minimal commenting.
-    See the config for 3D Tetris with debug enabled for explanation of the
+    See the config for 3D blocks with debug enabled for explanation of the
     settings used here.
   -->
 
@@ -18,8 +18,8 @@
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@v0.3-alpha/key-bindings.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/6dof-object-control.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/keyboard-hand-controls.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/thumbstick-object-control.min.js"></script>    
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/tetris-engine@v0.3-alpha/src/tetris.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/thumbstick-object-control.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/blocks-engine@v0.3-alpha/src/blocks.min.js"></script>
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
@@ -45,7 +45,7 @@
       <a-entity id='shape-gen' shapegenerator="nextshape:#nextshape"
                                position = "0.0 2.0 -0.8"></a-entity>
       <a-entity id='nextshape' position = "0.6 2.0 -0.8"></a-entity>
-      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Space=start,#rhand.abuttondown=start"></a-entity>
+      <a-entity blocksgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="bindings:Space=start,#rhand.abuttondown=start"></a-entity>
       <a-entity id="arena" arena="x: 5; z: 5" position = "0 0.5 -0.8">
         <a-plane shadow="receive:true" height="0.5" width="0.5" rotation="-90 0 0"></a-plane>
       </a-entity>

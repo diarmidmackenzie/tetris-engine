@@ -1,4 +1,4 @@
-<!-- A basic version of 1-block 3D Tetris for testing-->
+<!-- A basic version of 1-block 3D blocks for testing-->
 <!-- Game rotated by 45 degrees in world space-->
 <!-- This is done by wrapping the shape generator & arena
      with a parent entity and applying the rotations to that.
@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@latest/key-bindings.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.1-alpha/src/6dof-object-control.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@latest/src/keyboard-hand-controls.min.js"></script>
-    <script src="../../src/tetris.js"></script>
+    <script src="../../src/blocks.js"></script>
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
@@ -36,7 +36,7 @@
                                                      logger1:#log-panel1;
                                                      logger2:#log-panel2"
                                                 position = "0.0 2.0 0"></a-entity>
-        <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="debug:true;bindings:Enter=start"></a-entity>
+        <a-entity blocksgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="debug:true;bindings:Enter=start"></a-entity>
        <!-- the subtlety here is getting the arena center correct.
        <!-- Even dimensions on both x & z means we need to offset by 0.5, 0.5.
        <!-- But those offsets are applied in world-space, with the arena rotated by 45 degrees.

@@ -1,4 +1,4 @@
-<!-- A basic version of 1-block 3D Tetris for testing-->
+<!-- A basic version of 1-block 3D blocks for testing-->
 <!-- keyboard controls only, 2 x 2 grid, 2x1 blocks -->
 
 <html>
@@ -8,8 +8,8 @@
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@v0.3-alpha/key-bindings.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/6dof-object-control.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/keyboard-hand-controls.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/thumbstick-object-control.min.js"></script>    
-    <script src="../src/tetris.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.5-alpha/src/thumbstick-object-control.min.js"></script>
+    <script src="../src/blocks.js"></script>
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
@@ -59,7 +59,7 @@
                                                    logger1:#log-panel1;
                                                    logger2:#log-panel2"
                                               position = "0.0 2.0 -1"></a-entity>
-      <a-entity tetrisgame="generator: #shape-gen; initialspeed: 10000;scoreboard: #scoreboard" key-bindings="debug:true;bindings:Enter=start"></a-entity>
+      <a-entity blocksgame="generator: #shape-gen; initialspeed: 10000;scoreboard: #scoreboard" key-bindings="debug:true;bindings:Enter=start"></a-entity>
 
      <a-entity id="arena" arena="x: 3; z: 3" position = "0 1 -1" color=red>
          <a-plane shadow="receive:true" height="0.3" width="0.3" rotation="-90 0 0" color=red></a-plane>

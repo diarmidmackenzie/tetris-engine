@@ -1,4 +1,4 @@
-<!-- A basic version of 1-block 3D Tetris for testing-->
+<!-- A basic version of 1-block 3D blocks for testing-->
 <!-- Game rotated by 90 degrees in world space-->
 
 
@@ -9,7 +9,7 @@
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/key-bindings@latest/key-bindings.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@v0.1-alpha/src/6dof-object-control.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/6dof-object-control@latest/src/keyboard-hand-controls.min.js"></script>
-    <script src="../../src/tetris.js"></script>
+    <script src="../../src/blocks.js"></script>
   </head>
   <body>
     <a-scene renderer="colorManagement:true">
@@ -31,7 +31,7 @@
                                                    logger1:#log-panel1;
                                                    logger2:#log-panel2"
                                               position = "0.0 2.0 -1"></a-entity>
-      <a-entity tetrisgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="debug:true;bindings:Enter=start"></a-entity>
+      <a-entity blocksgame="generator: #shape-gen; scoreboard: #scoreboard" key-bindings="debug:true;bindings:Enter=start"></a-entity>
 
      <a-entity id="arena" arena="x: 2; z: 2" position = "0 1 -1" color=red rotation="0 90 0" >
          <a-plane shadow="receive:true" height="0.2" width="0.2" rotation="-90 0" position="0.05 0 0.05" color=red></a-plane>
