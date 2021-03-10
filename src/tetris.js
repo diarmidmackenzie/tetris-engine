@@ -1,10 +1,10 @@
 
 /*
-tetrisgame is overall game controller.
+blocksgame is overall game controller.
 
 shapegenerator issues "shape-generated" event.
-tetris binds to that new object. listening for "landed" event.
-when "landed" event occurs, tetris invokes the shape generator again...
+blocksgame binds to that new object. listening for "landed" event.
+when "landed" event occurs, blocksgame invokes the shape generator again...
 
 */
 var CONTINUOUS = true;
@@ -13,7 +13,7 @@ var GRID_UNIT = 0.1;
 const cloneArray = (items) => items.map(item => Array.isArray(item) ? cloneArray(item) : item);
 
 // Overall game controller.
-AFRAME.registerComponent('tetrisgame', {
+AFRAME.registerComponent('blocksgame', {
   schema: {
     generator: {type: 'string', default: '#shapegenerator'},
     arena: {type: 'string', default: '#arena'},
@@ -206,7 +206,7 @@ AFRAME.registerComponent('tetrisgame', {
     }
 
     // Any changes to displayed text, content etc. in the scene is best
-    // handled using event-set, and the _target: selector on the tetrisgame
+    // handled using event-set, and the _target: selector on the blocksgame
     // element.
 
   },
@@ -221,7 +221,7 @@ AFRAME.registerComponent('tetrisgame', {
     }
 
     // Any changes to displayed text, content etc. in the scene is best
-    // handled using event-set, and the _target: selector on the tetrisgame
+    // handled using event-set, and the _target: selector on the blocksgame
     // element.
   },
 
@@ -586,7 +586,7 @@ AFRAME.registerComponent('shapegenerator', {
 
     if (proxy) {
       // Disable debugging - too verbose & gets in the way of debugging problems
-      // with tetris-engine...
+      // with blocks-engine...
       entityEl.setAttribute('sixdof-control-proxy',
                             `controller:${this.sixdofController};
                              move:${this.moveControls.sixdof};
@@ -649,7 +649,7 @@ AFRAME.registerComponent('shapegenerator', {
     this.data.arena.appendChild(entityEl);
 
     // Now create child entities, one for each cube that makes up the shape.
-    // Typically there will be 4 of these (tetris), but we support other
+    // Typically there will be 4 of these (4-Blocks), but we support other
     // shape configs too, maybe smaller or larger...
     for (var ii = 0; ii < this.shapeModels[modelChoice].length; ii++) {
       var blockEntity = document.createElement('a-entity');
@@ -764,7 +764,7 @@ AFRAME.registerComponent('shapegenerator', {
     }
 
     // Announce the new shape to anyone who cares, including the shapeId.
-    // Specifically this is monitored by the tetrisgame component, which is
+    // Specifically this is monitored by the blocksgame component, which is
     // responsible for generating more shapes when this one lands.
     this.el.emit('new-shape', {shapeId: "#" + shapeId});
 
@@ -1014,7 +1014,7 @@ AFRAME.registerComponent('falling', {
      // the event data just contains the abolute new position.
 
      console.log("Move Event from 6DOF Controller")
-     TETRISlogXYZ("Move data: ", event.detail, 2, true);
+     BLOCKSlogXYZ("Move data: ", event.detail, 2, true);
 
      // Overwrite the y data point with the current position.
      event.detail.y = this.el.object3D.position.y;
@@ -1028,7 +1028,7 @@ AFRAME.registerComponent('falling', {
      var oldPosition = AFRAME.utils.clone(this.el.object3D.position);
      var moved;
 
-     //TETRISlogXYZ("Testing movement to position: ", this.el.object3D.position, 2, true);
+     //BLOCKSlogXYZ("Testing movement to position: ", this.el.object3D.position, 2, true);
      this.testingNewPosition = true;
      this.el.object3D.position.copy(newPosition)
 
@@ -1041,8 +1041,8 @@ AFRAME.registerComponent('falling', {
      // consistently get this right, so we need to get it right here.
      this.snapToGridXZ();
 
-     //TETRISlogXYZ("Trying to move shape to:", newPosition, 2, true);
-     //TETRISlogAllBlockPositions(this.el);
+     //BLOCKSlogXYZ("Trying to move shape to:", newPosition, 2, true);
+     //BLOCKSlogAllBlockPositions(this.el);
 
      if (this.canShapeMoveHere(this.el, {'x': 0, 'y': 0, 'z': 0})) {
        // The move worked fine.
@@ -1050,10 +1050,10 @@ AFRAME.registerComponent('falling', {
      }
      else {
        // revert.
-       //TETRISlogXYZ("Undoing position move to: ", this.el.object3D.position, 2, true);
+       //BLOCKSlogXYZ("Undoing position move to: ", this.el.object3D.position, 2, true);
        this.el.object3D.position.copy(oldPosition)
-       //TETRISlogXYZ("Reverted to: ", this.el.object3D.position, 2, true);
-       //TETRISlogAllBlockPositions(this.el);
+       //BLOCKSlogXYZ("Reverted to: ", this.el.object3D.position, 2, true);
+       //BLOCKSlogAllBlockPositions(this.el);
        moved = false;
      }
      this.testingNewPosition = false;
@@ -1080,7 +1080,7 @@ AFRAME.registerComponent('falling', {
      // the event data contains the Quaternion for the abolute new rotation.
 
      console.log("Rotate Event from 6DOF Controller")
-     TETRISlogQuat("Rotate data: ", event.detail, 1, true);
+     BLOCKSlogQuat("Rotate data: ", event.detail, 1, true);
 
      this.rotateAbsolute(event.detail);
    },
@@ -1110,7 +1110,7 @@ AFRAME.registerComponent('falling', {
 
    rotateAbsolute: function(quaternion) {
 
-     TETRISlogQuat("Trying to rotate shape to:", quaternion, 1, true);
+     BLOCKSlogQuat("Trying to rotate shape to:", quaternion, 1, true);
 
      //Initial filter: does rotation affect non-permitted axes?
      this.rotationEuler.setFromQuaternion(quaternion);
@@ -1128,10 +1128,10 @@ AFRAME.registerComponent('falling', {
      // Apply the new (absolute) rotation.
      // Copy, not multiply, as this is an absolute rotation,
      // not a relative one.
-     TETRISlogXYZ("Testing rotation at position: ", this.el.object3D.position, 2, true);
+     BLOCKSlogXYZ("Testing rotation at position: ", this.el.object3D.position, 2, true);
 
      console.log("pre-rotation");
-     TETRISlogAllBlockPositions(this.el);
+     BLOCKSlogAllBlockPositions(this.el);
      this.testingNewPosition = true;
      this.el.object3D.quaternion.copy(quaternion);
      // Rotation may have misaligned blocks from grid, so snap back.
@@ -1139,14 +1139,14 @@ AFRAME.registerComponent('falling', {
      this.snapToGridXZ();
 
      console.log("post-rotation");
-     TETRISlogAllBlockPositions(this.el);
+     BLOCKSlogAllBlockPositions(this.el);
 
      var rotated;
      // Is the new position viable?
      if (this.canShapeMoveHere(this.el, {'x': 0, 'y': 0, 'z': 0})) {
        // Yes, the move is viable.  Leave it in place.
-       TETRISlogXYZ("Completed rotation at position: ", this.el.object3D.position, 2, true);
-       TETRISlogAllBlockPositions(this.el);
+       BLOCKSlogXYZ("Completed rotation at position: ", this.el.object3D.position, 2, true);
+       BLOCKSlogAllBlockPositions(this.el);
        rotated = true;
      }
      else {
@@ -1166,12 +1166,12 @@ AFRAME.registerComponent('falling', {
 
        if (undo) {
          // Undo the rotation.
-         TETRISlogXYZ("Undoing rotation at position: ", this.el.object3D.position, 2, true);
+         BLOCKSlogXYZ("Undoing rotation at position: ", this.el.object3D.position, 2, true);
          this.el.object3D.quaternion.copy(oldQuaternion);
          this.el.object3D.position.copy(oldPosition);
          this.snapToGridXZ();
          rotated = false;
-         TETRISlogAllBlockPositions(this.el);
+         BLOCKSlogAllBlockPositions(this.el);
        }
      }
      this.testingNewPosition = false;
@@ -1321,12 +1321,12 @@ AFRAME.registerComponent('falling', {
          // So the whole object can't move.
          canMove = false;
 
-         TETRISlogXYZ("Block at this position can't move", arenaPosition, 2, true);
-         TETRISlogXYZ("Parent shape position is", this.el.object3D.position, 2, true);
+         BLOCKSlogXYZ("Block at this position can't move", arenaPosition, 2, true);
+         BLOCKSlogXYZ("Parent shape position is", this.el.object3D.position, 2, true);
          break;
        }
        else {
-         //TETRISlogXYZ("Block at this position is OK", worldPosition, 2, true);
+         //BLOCKSlogXYZ("Block at this position is OK", worldPosition, 2, true);
        }
      }
 
@@ -1409,7 +1409,7 @@ AFRAME.registerComponent('falling', {
          // Speed should be GRID_UNIT distance per interval msecs.
          if (timeDelta > 0) {
            distanceToFall = (GRID_UNIT * timeDelta) / interval;
-           //TETRISlogXYZ("Object falling at position: ", this.el.object3D.position, 2, true);
+           //BLOCKSlogXYZ("Object falling at position: ", this.el.object3D.position, 2, true);
            justLanded = !(this.moveRelative(0, -distanceToFall, 0));
 
            while (distanceToFall > (GRID_UNIT / 25)) {
@@ -1755,7 +1755,7 @@ AFRAME.registerComponent('arena', {
     // Find the cell that maps to this position.
     const cellIndex = this.arenaPositionToCellIndices(objectPosition);
     if (this.data.debug) {
-      TETRISlogXYZ("Cell Indices:", cellIndex, 2, true);
+      BLOCKSlogXYZ("Cell Indices:", cellIndex, 2, true);
     }
 
     if ((cellIndex.x >= 0 && cellIndex.x < this.width) &&
@@ -2177,7 +2177,7 @@ AFRAME.registerComponent('integration-tracker', {
 
 /* General utility functions.  SHould work on a cleaner way to organize these */
 
-function TETRISlogXYZ(text, pos, dp, debug = false) {
+function BLOCKSlogXYZ(text, pos, dp, debug = false) {
 
   var logtext = `${text} x: ${pos.x.toFixed(dp)}, y: ${pos.y.toFixed(dp)}, z: ${pos.z.toFixed(dp)}\n`
   if (debug) {
@@ -2186,18 +2186,18 @@ function TETRISlogXYZ(text, pos, dp, debug = false) {
   return (logtext);
 }
 
-function TETRISlogAllBlockPositions(element) {
+function BLOCKSlogAllBlockPositions(element) {
   const childrenArray = Array.from(element.childNodes);
   var worldPosition = new THREE.Vector3();
 
   for (var ii = 0; ii < childrenArray.length; ii++) {
     // Need to get absolute position of each component block.
     childrenArray[ii].object3D.getWorldPosition(worldPosition);
-    TETRISlogXYZ("Component Block at: ", worldPosition, 2, true);
+    BLOCKSlogXYZ("Component Block at: ", worldPosition, 2, true);
   }
 }
 
-function TETRISlogQuat(text, quat, dp = 2, debug = false) {
+function BLOCKSlogQuat(text, quat, dp = 2, debug = false) {
 
   var logtext = `${text} w: ${quat.w.toFixed(dp)}, x: ${quat.x.toFixed(dp)}, y: ${quat.y.toFixed(dp)}, z: ${quat.z.toFixed(dp)}\n`
 

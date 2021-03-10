@@ -1,11 +1,11 @@
-# tetris-engine.js
-A set of A-Frame components that enable VR Tetris games (2D and 3D) to be created using just HTML.
+# blocks-engine.js
+A set of A-Frame components that enable VR Falling Block games (2D and 3D) to be created using just HTML.
 
 
 
 ### Overview
 
-With just a few lines of HTML, you can put a falling blocks game in the style of Tetris into any A-Frame VR world.*
+With just a few lines of HTML, you can put a falling blocks game into any A-Frame VR world.*
 
 It can be 2D or 3D, it can use any set of shapes you choose, and you can customize various other aspects too.
 
@@ -31,11 +31,9 @@ In terms of compatibility for VR headsets and other XR devices...
 
 ### "I Just Want To Play The Game..."
 
-Hosted versions of the example games can be found here:
+Take a look at https://blocksarcade.xyz
 
-https://diarmidmackenzie.pythonanywhere.com/tetris/
-
-These are not necessarily running the very latest code, but I try to push updates fairly often.
+That's a VR gaming arcade offering a wide range of falling blocks games, built using this engine.
 
 
 
@@ -52,7 +50,7 @@ On keyboard, the controls are completely customizable.  The example games use:
     - 4/6 for yaw
     - 7/9 for roll
     - 5/8 for pitch.
-- The example games also support movement in VR using WASD or cursor keys, and gaze control using the mouse.  But this is just standard A-Frame stuff, nothing to do with tetris-engine.
+- The example games also support movement in VR using WASD or cursor keys, and gaze control using the mouse.  But this is just standard A-Frame stuff, nothing to do with blocks-engine.
 
 On a VR 6DoF controller, the controls are the same for 2D and 3D games, and again customizable (see below).  The example games use:
 
@@ -71,7 +69,7 @@ These controls are far from perfect, and I expect to make changes, and add custo
 From JSDelivr CDN:
 
 ```
-<script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/tetris-engine@v0.1-alpha/src/tetris.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/diarmidmackenzie/blocks-engine@v0.4-alpha/src/blocks.min.js"></script>
 ```
 
 There are also some dependencies you'll need from other repos:
@@ -105,10 +103,10 @@ See the examples directory for some basic examples.  At a very high level, you'l
 
 1. An entity for the 6DoF controller you want to use
 2. A mixin called "cube" (that's the  default - customizable as per details below) which contains some basic info about the appearance of the blocks you want to play with.
-3. An entity with the tetrisgame component.
+3. An entity with the blocksgame component.
 4. An entity with the shapegenerator component, positioned where you want shapes to spawn.
 5. A horizontal plane entity, with the arena component, that describes the surface onto which the pieces will fall.
-6. If you want shadows (3D Tetris is hard to play without them) a light source positioned about 20m directly above the arena.
+6. If you want shadows (3D games can be hard to play without them) a light source positioned about 20m directly above the arena.
 7. A scoreboard, and other text display panels as required.
 
 1, 2, 6 & 7 are standard A-Frame components.  Please refer to the examples, and the A-Frame documentation if anything is not clear.  https://aframe.io/docs/1.1.0/introduction/
@@ -119,7 +117,7 @@ Details on the properties to set for the components in 3, 4 & 5 are covered belo
 
 ### Component Interfaces
 
-#### tetrisgame
+#### blocksgame
 
 A very simple component, configured with the following properties:
 
@@ -132,7 +130,7 @@ A very simple component, configured with the following properties:
 - tutorial: Defaults to false.  Set to true if you want to use the game engine to build a tutorial on how to play.  When this is set, shapes do not fall by default (unless explicitly dropped), and new shapes are not generated automatically - instead a "nextStep" event is emitted to a configurable entity, which can control what happens next.
 - tutorialentity: Only used when "tutorial" is set to true.  A selector for the entity on which the "nextStep" event should be emitted, as per previous property.
 
-The game is started, or restarted, by generating the event "start" on the entity on which tetrisgame is configured.  This can be set in HTML using the latest key-bindings.js (see above), for example by setting this property, which sets the Backspace Key, and A button controller on the right hand, to start controls.
+The game is started, or restarted, by generating the event "start" on the entity on which blocksgame is configured.  This can be set in HTML using the latest key-bindings.js (see above), for example by setting this property, which sets the Backspace Key, and A button controller on the right hand, to start controls.
 
 ```
 key-bindings="debug:true;bindings:Backspace=start,#rhand.abuttondown=start"
@@ -156,7 +154,7 @@ The properties that can be set on this component are:
   - zRotMinus/zRotPlus: rotation about the z-axis (roll)
   - drop: accelerate the rate of falling of this shape.
 
-  If keys are not specified, they will default to the default controls for 3D tetris.  For VR-only applications, it shouldn't matter what keys are set, as the player won't be using the keyboard.
+  If keys are not specified, they will default to the default controls for 3D games.  For VR-only applications, it shouldn't matter what keys are set, as the player won't be using the keyboard.
 
 - move: An array of controls which control will enable movement of the object, when using a 6doF controller.  Each entry in the array is of the form {controller}.{control}, where {controller} is an ID for the relevant controller entity (e.g. #rhand or #lhand), and control is one of : grip, trigger or thumbstick.  Default is #lhand.thumbstick,#rhand.grip
 
@@ -172,27 +170,27 @@ The properties that can be set on this component are:
 
 - pershapemixin: (default: "") the prefix of a set of mixin names to be applied to the blocks.  There should be a set of mixins with names of the form: <pershapemixin><number>, where number starts at 0 and goes up.  There should be enough mixins to cover the number of different shape types  configured under "shapes".  Mixins will be assigned to shapes in order.  This mixin should include geometry, scale and material information.  When this is specified, the "globalmixin" setting is also applied to the shape, but no color is added other than what is specified in the mixin.
 
-- arenaperhapemixin: (default: "") this operates exactly like peshapemixin (i.e. it is a prefix of a set of numbered mixins starting from 0), but it applies at the point the block lands in the arena.  This allows for landed blocks to have a different appearance from in-flight blocks.  It can also be a good way to apply other changes to blocks as they land, for example making them become members of an Instanced Mesh, which can help significantly with performance. (see diarmidmackenzie/instanced-mesh/ and diarmidmackenzie/tetrisland/ for more details and examples).  Note that arenapershapemixin completely overrides both globalmixin and pershapemixin, for shapes once they have landed.
+- arenaperhapemixin: (default: "") this operates exactly like peshapemixin (i.e. it is a prefix of a set of numbered mixins starting from 0), but it applies at the point the block lands in the arena.  This allows for landed blocks to have a different appearance from in-flight blocks.  It can also be a good way to apply other changes to blocks as they land, for example making them become members of an Instanced Mesh, which can help significantly with performance. (see diarmidmackenzie/instanced-mesh/ and diarmidmackenzie/blocks-arcade/ for more details and examples).  Note that arenapershapemixin completely overrides both globalmixin and pershapemixin, for shapes once they have landed.
 
-- tutorial: Similar to the same parameter on the tetris-game component.  Shapes do not fall unless explicitly dropped.
+- tutorial: Similar to the same parameter on the blocksgame component.  Shapes do not fall unless explicitly dropped.
 
 - debug: Set "debug:true" on either to enable detailed console logging, and real-time data output to logger elements.
 
-- logger1: Must be set if debug is true.  Set to the ID of an <a-text> element to out real-time positional data (of the Tetris shape).  Default value is #log-panel1.
+- logger1: Must be set if debug is true.  Set to the ID of an <a-text> element to out real-time positional data (of the target shape).  Default value is #log-panel1.
 
 - logger2: Must be set if debug is true.  Set to the ID of an <a-text> element to out real-time positional data (of the proxy control object - see 6dof-object-control for bakground on what this is).  Default value is #log-panel2.
 
 The element assigned the shapegenerator component must also have the following A-Frame properties set.
 
-- An id, so that it can be references by the tetrisgame component.
+- An id, so that it can be references by the blocksgame component.
 - A position.  This position must be in the same position space as the arena, and must be vertically above the arena, typically in the center of the arena.  Note also that this position should be aligned to a 10cm boundary, matching the block size of the game - not meeting this requirement will result in unpredictable behaviour.
 
 #### arena
 
 The properties that can be set on this component are:
 
-- x: The width of the arena in blocks.  Typically 5 for 3D Tetris, 10 for 2D Tetris, though other values can be set.
-- z: The depth of the arena in blocks.  Typically 5 for 3D Tetris, 1 for 2D Tetris, though other values can be set.  The arena must be deep enough (and wide enough) to allow for all shapes configured on the shapegenerator to spawn within the bounds of the arena.  Problems will arise if you configure the shapegenerator to spawn shapes that are 2 blocks deep in an arena that's one block deep.
+- x: The width of the arena in blocks.  Typically 5 for 3D games, 10 for 2D games, though other values can be set.
+- z: The depth of the arena in blocks.  Typically 5 for 3D games, 1 for 2D games, though other values can be set.  The arena must be deep enough (and wide enough) to allow for all shapes configured on the shapegenerator to spawn within the bounds of the arena.  Problems will arise if you configure the shapegenerator to spawn shapes that are 2 blocks deep in an arena that's one block deep.
 
 The element assigned the shapegenerator component must also have the following A-Frame properties set.
 
@@ -203,13 +201,13 @@ The element assigned the shapegenerator component must also have the following A
     - For example: if the arena is 10 blocks wide, the "middle" of the arena is between blocks 5 & 6, so it's not a position where a block can be spawned.  To avoid this mis-alignment, offset the arena by half a block relative to the shape dropper.
     - (if this is still not clear, see the examples, and compare the 3D (5 x 5) and 2D (1 x 10) arena configs.)
 
- A further strong recommendation is that the arena is an <a-plane> entity with rotation "-90 0 0" (i.e. lying flat in the xz plane), and that it's dimensions are set to match the configured arena size.  If these recommendations aren't met, there shouldn't be any issues for tetris-engine, which only cares about the arena position, but players experience will be poor if the arena shape does not match the configured arena dimensions.
+ A further strong recommendation is that the arena is an <a-plane> entity with rotation "-90 0 0" (i.e. lying flat in the xz plane), and that it's dimensions are set to match the configured arena size.  If these recommendations aren't met, there shouldn't be any issues for blocks-engine, which only cares about the arena position, but players experience will be poor if the arena shape does not match the configured arena dimensions.
 
 #### Shape Definitions
 
 As mentioned above, the configuration of which shapes to generate is defined on the shapedropper in the shapes property.
 
-See the 2D Tetris or 2D Pentris for some examples of this config.
+See the 2D 4-Blocks or 2D 5-Blocks Examples for some examples of this config.
 
 The config consists of a comma-separated series of strings.  Each string represents a shape, and the strings look like EEE, EED or EDUE.
 
@@ -226,9 +224,9 @@ The shape definitions work as follows:
 - It's OK for shape definitions to double back on themselves.  That's needed to create e.g. a T block.  The shape generator just eliminates duplicate blocks.
 - The shape generator automatically calculates the center of mass of the block, and recenters based on that (to the nearest block).
 - The shape definition does affect the rotation of the block at the point it spawns, so EEE would spawn a horizontal 4-bar aligned with the x-axis, whereas UUU would spawn a vertical one, and NNN would spawn one aligned with the z-axis.
-- Where one shape can be rotated to form another, recommended practice is to only include one of the shapes - that would give the experience best aligned with classic Tetris.  But if you wanted to give a different experience, you could define all of EEE, UUU and NNN, and you'd get 4-bars spawning in 3 different orientations.
-- Note that whether one shape can be rotated into another depends on the arena size.  For example in 2D Tetris the L and S shapes come in left-handed and right-handed forms that can't be rotated into each other.  But in 3D Tetris these shapes can be swapped by rotation in the y-axis.  So for 3D Tetris, we only have one type of L block, and one type of S block (we have some interesting new 3D shapes to make up for it, though!).
-  - Ultimately, all this is controlled through config, and if you wanted to have both types of S block & both types of L block in 3D Tetris, you could configure it that way?
+- Where one shape can be rotated to form another, recommended practice is to only include one of the shapes - that would match the traditional experience.  But if you wanted to give a different experience, you could define all of EEE, UUU and NNN, and you'd get 4-bars spawning in 3 different orientations.
+- Note that whether one shape can be rotated into another depends on the arena size.  For example with 2D 4-Blocks the L and S shapes come in left-handed and right-handed forms that can't be rotated into each other.  But with 3D 4-Blocks these shapes can be swapped by rotation in the y-axis.  So for 3D 4-Blocks, we only have one type of L block, and one type of S block (we have some interesting new 3D shapes to make up for it, though!).
+  - Ultimately, all this is controlled through config, and if you wanted to have both types of S block & both types of L block in 3D , you could configure it that way.
 
 What about colors?
 
@@ -253,7 +251,7 @@ This is an area where I hope we can get better over time.
 
 This project is at a *very* early stage of development.
 
-The headline promise is that: "With just a few lines of HTML, you can put a falling blocks game in the style of Tetris into any A-Frame VR world."
+The headline promise is that: "With just a few lines of HTML, you can put a falling blocks game into any A-Frame VR world."
 
 In reality we're not there yet...  The code is still at a very early alpha stage.
 
@@ -273,7 +271,7 @@ Biggest limitations to be aware of:
 
 ### Acknowledgments
 
-Starry sky background for "Space Balls" 2D Tetris customization is based on a photo from Andy Holmes, https://unsplash.com/@andyjh07. 
+Starry sky background for "Space Balls" 2D 4-Blocks customization is based on a photo from Andy Holmes, https://unsplash.com/@andyjh07. 
 
 https://unsplash.com/photos/rCbdp8VCYhQ
 
