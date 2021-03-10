@@ -1,3 +1,4 @@
+
 /*
 tetrisgame is overall game controller.
 
@@ -394,7 +395,7 @@ AFRAME.registerComponent('shapegenerator', {
        * But shapes might be any number of blocks (different variants)
        * and sometimes the compasss directions double back (e.g. for T)
        * We handle this case, and de-duplicate as necessary. */
-       shapeData = this.shapeDataFromCompassData(item);
+       const shapeData = this.shapeDataFromCompassData(item);
        this.shapeModels.push(shapeData);
      });
 
@@ -405,7 +406,7 @@ AFRAME.registerComponent('shapegenerator', {
   storeControlsConfig: function(configArray, controlsData) {
 
     configArray.forEach((item) => {
-      config = item.split(".");
+      const config = item.split(".");
 
       // For back-compatibility, if no cotroller is specified, assume #rhand
       // and warn.
@@ -456,8 +457,8 @@ AFRAME.registerComponent('shapegenerator', {
   shapeDataFromCompassData: function(compassString) {
 
     // build the shape starting at 0, 0, 0.
-    blockData = [0, 0, 0]
-    shapeData = [];
+    var blockData = [0, 0, 0]
+    var shapeData = [];
 
     // Push a copy of block data into shape data.
     shapeData.push(blockData.map((x) => x));
@@ -736,8 +737,8 @@ AFRAME.registerComponent('shapegenerator', {
       this.createShapeElement(proxyId,
                               proxyClass,
                               modelChoice,
-                              proxy = true,
-                              nextShape = false,
+                              true, // proxy
+                              false, //nextShape
                               shapeId,
                               inFocus);
     }
@@ -745,8 +746,8 @@ AFRAME.registerComponent('shapegenerator', {
     this.createShapeElement(shapeId,
                             shapeClass,
                             modelChoice,
-                            proxy = false,
-                            nextShape = false,
+                            false, // proxy
+                            false, //nextShape
                             proxyId,
                             inFocus);
 
@@ -756,8 +757,8 @@ AFRAME.registerComponent('shapegenerator', {
       this.createShapeElement(nextShapeId,
                               nextShapeClass,
                               this.nextShapeChoice,
-                              proxy = false,
-                              nextShape = true,
+                              false, //proxy
+                              true, //nextShape
                               null,
                               inFocus);
     }
@@ -1025,6 +1026,7 @@ AFRAME.registerComponent('falling', {
      // Is the new position viable?
      // Just move the shape, and see how it goes.
      var oldPosition = AFRAME.utils.clone(this.el.object3D.position);
+     var moved;
 
      //TETRISlogXYZ("Testing movement to position: ", this.el.object3D.position, 2, true);
      this.testingNewPosition = true;
@@ -1117,8 +1119,8 @@ AFRAME.registerComponent('falling', {
      }
 
      // Before we rotate, save off the old quaternion & position.
-     oldQuaternion = this.oldQuaternion;
-     oldPosition = this.oldPosition;    
+     var oldQuaternion = this.oldQuaternion;
+     var oldPosition = this.oldPosition;
      oldQuaternion.copy(this.el.object3D.quaternion);
      oldPosition.copy(this.el.object3D.position);
      var undo = false;
@@ -1295,9 +1297,9 @@ AFRAME.registerComponent('falling', {
 
      // Loop through each sub-component in the shape.  If any one can't move, the
      // whole thing can't fall.
-     childrenArray = Array.from(element.childNodes);
+     const childrenArray = Array.from(element.childNodes);
 
-     for (ii = 0; ii < childrenArray.length; ii++) {
+     for (var ii = 0; ii < childrenArray.length; ii++) {
 
        // Block positions are relative to parent shape.
        // We need them in arena space.
@@ -1336,11 +1338,11 @@ AFRAME.registerComponent('falling', {
 
      var worldPosition = this.worldPosition;
      var arenaPosition = this.arenaPosition;
-     var childrenArray = Array.from(this.el.childNodes);
+     const childrenArray = Array.from(this.el.childNodes);
      var roundedX;
      var roundedZ;
 
-     for (ii = 0; ii < childrenArray.length; ii++) {
+     for (var ii = 0; ii < childrenArray.length; ii++) {
        // Every block's arena XZ position should be close to a multiple of
        // GRID_UNIT.
        // our snap logic is intended to ensure this.
@@ -1492,7 +1494,7 @@ AFRAME.registerComponent('falling', {
 
      var childrenArray = Array.from(element.childNodes);
 
-     for (ii = 0; ii < childrenArray.length; ii++) {
+     for (var ii = 0; ii < childrenArray.length; ii++) {
 
        arena.integrateBlock(childrenArray[ii], mixin);
      }
@@ -1678,7 +1680,7 @@ AFRAME.registerComponent('arena', {
     var sceneEl = document.querySelector('a-scene');
     var blockList = sceneEl.querySelectorAll('.block' + this.el.id);
 
-    for (blockIx = 0; blockIx < blockList.length; blockIx++) {
+    for (var blockIx = 0; blockIx < blockList.length; blockIx++) {
 
       var arenaPosition = this.arenaPosition;
       // Query will include the falling block.
@@ -1704,9 +1706,9 @@ AFRAME.registerComponent('arena', {
     }
 
     // Check for any marked cells unaccounted for...
-    for (ii = 0; ii < clonedCellsArray.length; ii++) {
-      for (jj = 0; jj < clonedCellsArray[ii].length; jj++) {
-        for (kk = 0; kk < clonedCellsArray[ii][jj].length; kk++) {
+    for (var ii = 0; ii < clonedCellsArray.length; ii++) {
+      for (var jj = 0; jj < clonedCellsArray[ii].length; jj++) {
+        for (var kk = 0; kk < clonedCellsArray[ii][jj].length; kk++) {
           //console.log (ii + " " + jj + " " + kk);
           if (clonedCellsArray[ii][jj][kk] !== 0) {
             console.log("Found cells Array data with no corresponding object");
@@ -1952,6 +1954,8 @@ AFRAME.registerComponent('arena', {
   removeAnyCompleteLines: function () {
 
     var linesRemoved = 0;
+    var cellsToDelete = [];
+    var lineCellCount;
 
     // When we delete a single X or Z line, this changes all the layers above it
     // so the order in which we look at layers makes a difference to what blocks
@@ -1985,7 +1989,7 @@ AFRAME.registerComponent('arena', {
     // This design is motivated by a particular care for the case where there
     // are intersection X & Z rows being deleted.  We want to only destory one
     // block at this intersection, not two...
-    cellsToDelete = [];
+
     for (var ii = 0; ii < this.cellsArray.length; ii++) {
       var row = []
 
@@ -1995,7 +1999,7 @@ AFRAME.registerComponent('arena', {
         var deleteBlock = 0;
 
         if (this.deleteFullZLine) {
-          var lineCellCount = this.cellsArray[ii][jj].reduce((a,b) => a + b);
+          lineCellCount = this.cellsArray[ii][jj].reduce((a,b) => a + b);
           if (lineCellCount == this.depth) {
             deleteBlock = 1;
             linesRemoved++;
@@ -2039,7 +2043,7 @@ AFRAME.registerComponent('arena', {
       // We work from the bottom up.
 
       for (var jj = 0; jj < this.width; jj++) {
-        for (var kk = 0; kk < this.width; kk++) {
+        for (var kk = 0; kk < this.depth; kk++) {
           var drop = 0;
           for (var ii = 0; ii < this.cellsArray.length; ii++) {
             if (cellsToDelete[ii][jj][kk] == 1) {
@@ -2183,10 +2187,10 @@ function TETRISlogXYZ(text, pos, dp, debug = false) {
 }
 
 function TETRISlogAllBlockPositions(element) {
-  childrenArray = Array.from(element.childNodes);
+  const childrenArray = Array.from(element.childNodes);
   var worldPosition = new THREE.Vector3();
 
-  for (ii = 0; ii < childrenArray.length; ii++) {
+  for (var ii = 0; ii < childrenArray.length; ii++) {
     // Need to get absolute position of each component block.
     childrenArray[ii].object3D.getWorldPosition(worldPosition);
     TETRISlogXYZ("Component Block at: ", worldPosition, 2, true);
