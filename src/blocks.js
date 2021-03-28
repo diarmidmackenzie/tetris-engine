@@ -580,8 +580,12 @@ AFRAME.registerComponent('shapegenerator', {
     entityEl.setAttribute('class', shapeClass);
 
     var disabledString="";
-    if (!inFocus) {
+    if (inFocus) {
       disabledString=";disabled:false"
+    }
+    else
+    {
+      disabledString=";disabled:true"
     }
 
     if (proxy) {
