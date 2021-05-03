@@ -683,6 +683,9 @@ AFRAME.registerComponent('shapegenerator', {
           blockEntity.setAttribute("shadow", "cast:true");
           // Let's try not using "snap - shouldn't be necessary as we only move in
           // unit increments anyway.
+
+          // Allow the "layers" (i.e. whether the shape is )
+          blockEntity.setAttribute("url-specified-layers", "shapes");
         }
       }
 
@@ -2176,6 +2179,31 @@ AFRAME.registerComponent('integration-tracker', {
     // complete, it will continue with it's processing.
     console.log('Block creation completed for one block.');
     arena.blockIntegrated();
+  }
+});
+
+// Takes a parameter ("id") from the URL, and uses it to specify a value for the
+// "layers" component, which determines with TREE.js layers the shape is rendered
+// under.
+// https://github.com/bryik/aframe-layers-component/blob/master/index.js
+// if this component is not available, or if no URL parameter is supplied
+// there will be no effect.
+AFRAME.registerComponent('url-specified-layers', {
+
+  schema: {
+    default: ""
+  },
+
+  update: function () {
+    var url_string = window.location.href;
+    var url = new URL(url_string);
+    var layers = url.searchParams.get(this.data);
+
+    if (!layers) {
+      layers = "0";
+    }
+
+    this.el.setAttribute("layers", layers);
   }
 });
 
